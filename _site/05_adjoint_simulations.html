@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>SPECFEM2D</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#157878">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="/assets/css/style.css?v=00e904481ff628568d9bf52b093849a8243c2d86">
+  </head>
+  <body>
+    <section class="page-header">
+      <div class="parallax"><!-- parallax -->
+        <div class="parallax_layer parallax_layer_back">
+          <div class="img_background img1"></div>
+        </div>
+      <!-- </div> -->
+      <div class="parallax_layer parallax_layer_front">
+        <h1 class="project-name">SPECFEM2D</h1>
+        <h2 class="project-tagline">SPECFEM2D allows users to perform 2D and 2.5D (i.e., axisymmetric) simulations of acoustic, elastic, viscoelastic, and poroelastic seismic wave propagation. 
+</h2>
+        
+          <a href="http://github.com/danielpeter/specfem2d" class="btn">View on GitHub</a>
+        
+        
+      </div><!-- end of parallax -->
+    </section>
+
+    <section class="main-content">
+      <p><strong>Table of Contents</strong></p>
+
+<ul>
+  <li><a href="#adjoint-simulations">Adjoint Simulations</a>
+    <ul>
+      <li><a href="#how-to-obtain-finite-sensitivity-kernels">How to obtain finite sensitivity kernels</a></li>
+      <li><a href="#remarks-about-adjoint-runs-and-solving-inverse-problems">Remarks about adjoint runs and solving inverse problems</a></li>
+      <li><a href="#caution">Caution</a></li>
+    </ul>
+  </li>
+</ul>
+
+<h1 id="adjoint-simulations">Adjoint Simulations</h1>
+
+<h2 id="how-to-obtain-finite-sensitivity-kernels">How to obtain finite sensitivity kernels</h2>
+
+<ol>
+  <li>
+    <p>Run a forward simulation:</p>
+
+    <ul>
+      <li>
+        <p><code class="highlighter-rouge">SIMULATION_TYPE = 1</code></p>
+      </li>
+      <li>
+        <p><code class="highlighter-rouge">SAVE_FORWARD = .true.</code></p>
+      </li>
+      <li>
+        <p><code class="highlighter-rouge">seismotype = 1</code> (we need to save the displacement fields to later on derive the adjoint source. Note: if the user forgets it, the program corrects it when reading the proper <code class="highlighter-rouge">SIMULATION_TYPE</code> and <code class="highlighter-rouge">SAVE_FORWARD</code> combination and a warning message appears in the output file)</p>
+      </li>
+    </ul>
+
+    <p>Important output files (for example, for the elastic case, P-SV waves):</p>
+
+    <ul>
+      <li>
+        <p><code class="highlighter-rouge">absorb_elastic_bottom*****.bin</code></p>
+      </li>
+      <li>
+        <p><code class="highlighter-rouge">absorb_elastic_left*****.bin</code></p>
+      </li>
+      <li>
+        <p><code class="highlighter-rouge">absorb_elastic_right*****.bin</code></p>
+      </li>
+      <li>
+        <p><code class="highlighter-rouge">absorb_elastic_top*****.bin</code></p>
+      </li>
+      <li>
+        <p><code class="highlighter-rouge">lastframe_elastic*****.bin</code></p>
+      </li>
+      <li>
+        <p><code class="highlighter-rouge">AA.S****.BXX.semd</code></p>
+      </li>
+      <li>
+        <p><code class="highlighter-rouge">AA.S****.BXZ.semd</code></p>
+      </li>
+    </ul>
+  </li>
+  <li>
+    <p>Define the adjoint source:</p>
+
+    <ul>
+      <li>
+        <p>Use <code class="highlighter-rouge">adj_seismogram.f90</code></p>
+      </li>
+      <li>
+        <p>Edit to update <code class="highlighter-rouge">NSTEP</code>, <code class="highlighter-rouge">nrec</code>, <code class="highlighter-rouge">t0</code>, <code class="highlighter-rouge">deltat</code>, and the position of the cut to pick any given phase if needed (<code class="highlighter-rouge">tstart</code>,<code class="highlighter-rouge">tend</code>), add the right number of stations, and put one component of the source to zero if needed.</p>
+      </li>
+      <li>
+        <p>The output files of <code class="highlighter-rouge">adj_seismogram.f90</code> are <code class="highlighter-rouge">AA.S****.BXX.adj</code> and <code class="highlighter-rouge">AA.S****.BXZ.adj</code>, for P-SV waves (and <code class="highlighter-rouge">AA.S****.BXY.adj</code>, for SH (membrane) waves). Note that you will need these three files (<code class="highlighter-rouge">AA.S****.BXX.adj</code>, <code class="highlighter-rouge">AA.S****.BXY.adj</code> and <code class="highlighter-rouge">AA.S****.BXZ.adj</code>) to be present in the <code class="highlighter-rouge">SEM/</code> directory together with the <code class="highlighter-rouge">absorb_elastic_***.bin</code> and <code class="highlighter-rouge">lastframe_elastic.bin</code> files to be read when running the adjoint simulation.</p>
+      </li>
+    </ul>
+  </li>
+  <li>
+    <p>Run the adjoint simulation:</p>
+
+    <ul>
+      <li>
+        <p>Make sure that the adjoint source files absorbing boundaries and last frame files are in the <code class="highlighter-rouge">OUTPUT_FILES/</code> directory.</p>
+      </li>
+      <li>
+        <p><code class="highlighter-rouge">SIMULATION_TYPE = 3</code></p>
+      </li>
+      <li>
+        <p><code class="highlighter-rouge">SAVE_FORWARD = .false.</code></p>
+      </li>
+    </ul>
+
+    <p>Output files (for example for the elastic case):</p>
+
+    <ul>
+      <li>
+        <p><code class="highlighter-rouge">snapshot_rho_kappa_mu*****</code></p>
+      </li>
+      <li>
+        <p><code class="highlighter-rouge">snapshot_rhop_alpha_beta*****</code></p>
+      </li>
+    </ul>
+
+    <p>which are the primary moduli kernels and the phase velocities kernels respectively, in ascii format and at the local level, that is as “<code class="highlighter-rouge">kernels(i,j,ispec)</code>”.</p>
+  </li>
+</ol>
+
+<h2 id="remarks-about-adjoint-runs-and-solving-inverse-problems">Remarks about adjoint runs and solving inverse problems</h2>
+
+<p>SPECFEM2D can produce the gradient of the misfit function for a tomographic inversion, but options for using the gradient within an iterative inversion are left to the user (e.g., conjugate-gradient, steepest descent). The plan is to include some examples in the future.</p>
+
+<p>The algorithm is simple:</p>
+
+<ol>
+  <li>
+    <p>calculate the forward wave field (\mathbf{s}(x,t))</p>
+  </li>
+  <li>
+    <p>calculate the adjoint wave field (\mathbf{s}^\dagger(x,t))</p>
+  </li>
+  <li>
+    <p>calculate their interaction (\mathbf{s}(x,t) \cdot \mathbf{s}^\dagger(x,T-t)) (these symbolic, temporal and spatial derivatives should be included)</p>
+  </li>
+  <li>
+    <p>integrate the interactions, which is summation in the code.</p>
+  </li>
+</ol>
+
+<p>That is all. Step 3 has some tricks in implementation, but which can be skipped by regular users.</p>
+
+<p>If you look into SPECFEM2D, besides “<code class="highlighter-rouge">rhop_ac_kl</code>” and “<code class="highlighter-rouge">rho_ac_kl</code>”, there are more variables such as “<code class="highlighter-rouge">kappa_ac_kl</code>” and “<code class="highlighter-rouge">rho_el_kl</code>” etc. “<code class="highlighter-rouge">rho</code>” denotes density (\rho) (“<code class="highlighter-rouge">kappa</code>” for bulk modulus (\kappa) etc.), “<code class="highlighter-rouge">ac</code>” denotes acoustic (“<code class="highlighter-rouge">el</code>” for elastic), “<code class="highlighter-rouge">kl</code>” means kernel (and you may find “<code class="highlighter-rouge">k</code>” as well, which is the interaction at each time step, i.e., before doing time integration).</p>
+
+<h2 id="caution">Caution</h2>
+
+<p>Please note that:</p>
+
+<ul>
+  <li>
+    <p>at the moment, adjoint simulations do not support anisotropy, attenuation, and viscous damping.</p>
+  </li>
+  <li>
+    <p>you will need <code class="highlighter-rouge">AA.S****.BXX.adj</code>, <code class="highlighter-rouge">AA.S****.BXY.adj</code> and <code class="highlighter-rouge">AA.S****.BXZ.adj</code> to be present in directory <code class="highlighter-rouge">SEM/</code> even if you are just running an acoustic or poroelastic adjoint simulation.</p>
+
+    <ul>
+      <li>
+        <p><code class="highlighter-rouge">AA.S****.BXX.adj</code> is the only relevant component for an acoustic case.</p>
+      </li>
+      <li>
+        <p><code class="highlighter-rouge">AA.S****.BXX.adj</code> and <code class="highlighter-rouge">AA.S****.BXZ.adj</code> are the only relevant components for a poroelastic case.</p>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<hr />
+<blockquote>
+  <p>This documentation has been automatically generated by <a href="http://www.pandoc.org">pandoc</a>
+based on the User manual (LaTeX version) in folder doc/USER_MANUAL/
+(Jul 26, 2018)</p>
+</blockquote>
+
+
+    </section>
+
+    <section class="page-footer">
+      <footer class="site-footer">
+        
+          <span class="site-footer-owner"><a href="http://github.com/danielpeter/specfem2d">specfem2d</a> is maintained by <a href="http://github.com/danielpeter">danielpeter</a></span>
+        
+        <span class="site-footer-credits">generated by <a href="https://pages.github.com">GitHub Pages</a></span>
+      </footer>
+    </section>
+
+    
+  </body>
+</html>

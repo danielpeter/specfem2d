@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>SPECFEM2D</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#157878">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="/assets/css/style.css?v=00e904481ff628568d9bf52b093849a8243c2d86">
+  </head>
+  <body>
+    <section class="page-header">
+      <div class="parallax"><!-- parallax -->
+        <div class="parallax_layer parallax_layer_back">
+          <div class="img_background img1"></div>
+        </div>
+      <!-- </div> -->
+      <div class="parallax_layer parallax_layer_front">
+        <h1 class="project-name">SPECFEM2D</h1>
+        <h2 class="project-tagline">SPECFEM2D allows users to perform 2D and 2.5D (i.e., axisymmetric) simulations of acoustic, elastic, viscoelastic, and poroelastic seismic wave propagation. 
+</h2>
+        
+          <a href="http://github.com/danielpeter/specfem2d" class="btn">View on GitHub</a>
+        
+        
+      </div><!-- end of parallax -->
+    </section>
+
+    <section class="main-content">
+      <p><strong>Table of Contents</strong></p>
+
+<ul>
+  <li><a href="#getting-started">Getting Started</a>
+    <ul>
+      <li><a href="#visualizing-the-subroutine-calling-tree-of-the-source-code">Visualizing the subroutine calling tree of the source code</a></li>
+      <li><a href="#becoming-a-developer-of-the-code-or-making-small-modifications-in-the-source-code">Becoming a developer of the code, or making small modifications in the source code</a></li>
+    </ul>
+  </li>
+</ul>
+
+<h1 id="getting-started">Getting Started</h1>
+
+<p>To download the SPECFEM2D software package, type this:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>git clone --recursive --branch devel https://github.com/geodynamics/specfem2d.git
+</code></pre>
+</div>
+
+<p><em>Note: for people who would like to run the package on Windows rather than on Unix machines, you can install Docker or VirtualBox (installing a Linux in VirtualBox in that latter case) and run it easily from inside that.</em></p>
+
+<p>We recommend that you add <code class="highlighter-rouge">ulimit -S -s unlimited</code> to your <code class="highlighter-rouge">.bash_profile</code> file and/or <code class="highlighter-rouge">limit stacksize unlimited</code> to your <code class="highlighter-rouge">.cshrc</code> file to suppress any potential limit to the size of the Unix stack.</p>
+
+<p>Then, to configure the software for your system, run the <code class="highlighter-rouge">configure</code> shell script. This script will attempt to guess the appropriate configuration values for your system. However, at a minimum, it is recommended that you explicitly specify the appropriate command names for your Fortran compiler (another option is to define FC, CC and MPIF90 in your .bash_profile or your .cshrc file):</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>    ./configure FC=gfortran CC=gcc
+</code></pre>
+</div>
+
+<p>If you want to run in parallel, i.e., using more than one processor core, then you would type</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>    ./configure FC=gfortran CC=gcc MPIFC=mpif90 --with-mpi
+</code></pre>
+</div>
+
+<p>You can replace the GNU compilers above (gfortran and gcc) with other compilers if you want to; for instance for Intel ifort and icc use FC=ifort CC=icc instead.</p>
+
+<p>Before running the <code class="highlighter-rouge">configure</code> script, you should probably edit file <code class="highlighter-rouge">flags.guess</code> to make sure that it contains the best compiler options for your system. Known issues or things to check are:</p>
+
+<p>Intel ifort compiler<br />
+See if you need to add <code class="highlighter-rouge">-assume byterecl</code> for your machine. <strong>In the case of that compiler, we have noticed that initial release versions sometimes have bugs or issues that can lead to wrong results when running the code, thus we <em>strongly</em> recommend using a version for which at least one service pack or update has been installed.</strong> <em>In particular, for version 17 of that compiler, users have reported problems (making the code crash at run time) with the <code class="highlighter-rouge">-assume buffered_io</code> option; if you notice problems, remove that option from file <code class="highlighter-rouge">flags.guess</code> or change it to <code class="highlighter-rouge">-assume nobuffered_io</code> and try again.</em></p>
+
+<p>IBM compiler<br />
+See if you need to add <code class="highlighter-rouge">-qsave</code> or <code class="highlighter-rouge">-qnosave</code> for your machine.</p>
+
+<p>Mac OS<br />
+You will probably need to install <code class="highlighter-rouge">XCODE</code>.</p>
+
+<p>IBM Blue Gene machines<br />
+Please refer to the manual of SPECFEM3D_Cartesian, which contains detailed instructions on how to run on Blue Gene.</p>
+
+<p>The SPECFEM2D software package relies on the SCOTCH library to partition meshes. The SCOTCH library (Pellegrini and Roman 1996) provides efficient static mapping, graph and mesh partitioning routines. SCOTCH is a free software package developed by François Pellegrini et al. from LaBRI and Inria in Bordeaux, France, downloadable from the web page <a href="https://gforge.inria.fr/projects/scotch/">https://gforge.inria.fr/projects/scotch/</a>. In case no SCOTCH libraries can be found on the system, the configuration will bundle the version provided with the source code for compilation. The path to an existing SCOTCH installation can to be set explicitly with the option <code class="highlighter-rouge">--with-scotch-dir</code>. Just as an example:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>    ./configure FC=ifort MPIFC=mpif90 --with-mpi --with-scotch-dir=/opt/scotch
+</code></pre>
+</div>
+
+<p>If you use the Intel ifort compiler to compile the code, we recommend that you use the Intel icc C compiler to compile Scotch, i.e., use:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>    ./configure CC=icc FC=ifort MPIFC=mpif90
+</code></pre>
+</div>
+
+<p>For further details about the installation of SCOTCH, go to subdirectory <code class="highlighter-rouge">scotch_5.1.11/</code> and read <code class="highlighter-rouge">INSTALL.txt</code>. You may want to download more recent versions of SCOTCH in the future from . Support for the METIS graph partitioner has been discontinued because SCOTCH is more recent and performs better.</p>
+
+<p>When compiling the SCOTCH source code, if you get a message such as: “ld: cannot find -lz”, the Zlib compression development library is probably missing on your machine and you will need to install it or ask your system administrator to do so. On Linux machines the package is often called “zlib1g-dev” or similar. (thus “sudo apt-get install zlib1g-dev” would install it)</p>
+
+<p>You may edit the <code class="highlighter-rouge">Makefile</code> for more specific modifications. Especially, there are several options available:</p>
+
+<ul>
+  <li>
+    <p><code class="highlighter-rouge">-DUSE_MPI</code> compiles with use of an MPI library.</p>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">-DUSE_SCOTCH</code> enables use of graph partitioner SCOTCH.</p>
+  </li>
+</ul>
+
+<p>After these steps, go back to the main directory of SPECFEM2D/ and type</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>    make
+</code></pre>
+</div>
+
+<p>to create all executables which will be placed into the folder <code class="highlighter-rouge">./bin/</code>.</p>
+
+<p>By default, the solver runs in single precision. This is fine for most application, but if for some reason you want to run the solver in double precision, run the <code class="highlighter-rouge">configure</code> script with option “<code class="highlighter-rouge">--enable-double-precision</code>”. Keep in mind that this will of course double total memory size and will also make the solver around 20 to 30% slower on many processors.</p>
+
+<p>If your compiler has problems with the <code class="highlighter-rouge">use mpi</code> statements that are used in the code, use the script called <code class="highlighter-rouge">replace_use_mpi_with_include_mpif_dot_h.pl</code> in the root directory to replace all of them with <code class="highlighter-rouge">include mpif.h</code> automatically.</p>
+
+<p>If you have problems configuring the code on a Cray machine, i.e. for instance if you get an error message from the <code class="highlighter-rouge">configure</code> script, try exporting these two variables: <code class="highlighter-rouge">MPI_INC=$CRAY_MPICH2_DIR/include and FCLIBS= </code>, and for more details if needed you can refer to the <code class="highlighter-rouge">utils/Cray_compiler_information</code> directory. You can also have a look at the configure script called <code class="highlighter-rouge">utils/Cray_compiler_information/configure_SPECFEM_for_Piz_Daint.bash</code>.</p>
+
+<h2 id="visualizing-the-subroutine-calling-tree-of-the-source-code">Visualizing the subroutine calling tree of the source code</h2>
+
+<p>Packages such as <code class="highlighter-rouge">doxywizard</code> can be used to visualize the subroutine calling tree of the source code. <code class="highlighter-rouge">Doxywizard</code> is a GUI front-end for configuring and running <code class="highlighter-rouge">doxygen</code>.</p>
+
+<h2 id="becoming-a-developer-of-the-code-or-making-small-modifications-in-the-source-code">Becoming a developer of the code, or making small modifications in the source code</h2>
+
+<p>If you want to develop new features in the code, and/or if you want to make small changes, improvements, or bug fixes, you are very welcome to contribute. To do so, i.e. to access the development branch of the source code with read/write access (in a safe way, no need to worry too much about breaking the package, there is a robot called BuildBot that is in charge of checking and validating all new contributions and changes), please visit this Web page: <a href="https://github.com/geodynamics/specfem2d/wiki/Using-Hub">https://github.com/geodynamics/specfem2d/wiki/Using-Hub</a>.</p>
+
+<p>To visualize the call tree (calling tree) of the source code, you can see the Doxygen tool available in directory <code class="highlighter-rouge">doc/call_trees_of_the_source_code</code>.</p>
+
+<h2 id="references">References</h2>
+
+<p>Pellegrini, F., and J. Roman. 1996. “SCOTCH: A Software Package for Static Mapping by Dual Recursive Bipartitioning of Process and Architecture Graphs.” <em>Lecture Notes in Computer Science</em> 1067: 493–98.</p>
+
+<hr />
+<blockquote>
+  <p>This documentation has been automatically generated by <a href="http://www.pandoc.org">pandoc</a>
+based on the User manual (LaTeX version) in folder doc/USER_MANUAL/
+(Jul 26, 2018)</p>
+</blockquote>
+
+
+    </section>
+
+    <section class="page-footer">
+      <footer class="site-footer">
+        
+          <span class="site-footer-owner"><a href="http://github.com/danielpeter/specfem2d">specfem2d</a> is maintained by <a href="http://github.com/danielpeter">danielpeter</a></span>
+        
+        <span class="site-footer-credits">generated by <a href="https://pages.github.com">GitHub Pages</a></span>
+      </footer>
+    </section>
+
+    
+  </body>
+</html>
