@@ -11,7 +11,7 @@ To download the SPECFEM2D software package, type this:
 
     git clone --recursive --branch devel https://github.com/geodynamics/specfem2d.git
 
-*Note: for people who would like to run the package on Windows rather than on Unix machines, you can install Docker or VirtualBox (installing a Linux in VirtualBox in that latter case) and run it easily from inside that.*
+Note: for people who would like to run the package on Windows rather than on Unix machines, you can install Docker or VirtualBox (installing a Linux in VirtualBox in that latter case) and run it easily from inside that.
 
 We recommend that you add `ulimit -S -s unlimited` to your `.bash_profile` file and/or `limit stacksize unlimited` to your `.cshrc` file to suppress any potential limit to the size of the Unix stack.
 
@@ -28,7 +28,8 @@ You can replace the GNU compilers above (gfortran and gcc) with other compilers 
 Before running the `configure` script, you should probably edit file `flags.guess` to make sure that it contains the best compiler options for your system. Known issues or things to check are:
 
 Intel ifort compiler  
-See if you need to add `-assume byterecl` for your machine. **In the case of that compiler, we have noticed that initial release versions sometimes have bugs or issues that can lead to wrong results when running the code, thus we *strongly* recommend using a version for which at least one service pack or update has been installed.** *In particular, for version 17 of that compiler, users have reported problems (making the code crash at run time) with the `-assume buffered_io` option; if you notice problems, remove that option from file `flags.guess` or change it to `-assume nobuffered_io` and try again.*
+See if you need to add `-assume byterecl` for your machine.
+In the case of that compiler, we have noticed that initial release versions sometimes have bugs or issues that can lead to wrong results when running the code, thus we *strongly* recommend using a version for which at least one service pack or update has been installed. *In particular, for version 17 of that compiler, users have reported problems (making the code crash at run time) with the `-assume buffered_io` option; if you notice problems, remove that option from file `flags.guess` or change it to `-assume nobuffered_io` and try again.*
 
 IBM compiler  
 See if you need to add `-qsave` or `-qnosave` for your machine.
@@ -67,7 +68,8 @@ By default, the solver runs in single precision. This is fine for most applicati
 
 If your compiler has problems with the `use mpi` statements that are used in the code, use the script called `replace_use_mpi_with_include_mpif_dot_h.pl` in the root directory to replace all of them with `include mpif.h` automatically.
 
-If you have problems configuring the code on a Cray machine, i.e. for instance if you get an error message from the `configure` script, try exporting these two variables: `MPI_INC=$CRAY_MPICH2_DIR/include and FCLIBS= `, and for more details if needed you can refer to the `utils/Cray_compiler_information` directory. You can also have a look at the configure script called `utils/Cray_compiler_information/configure_SPECFEM_for_Piz_Daint.bash`.
+If you have problems configuring the code on a Cray machine, i.e. for instance if you get an error message from the `configure` script, try exporting these two variables: `MPI_INC=$CRAY_MPICH2_DIR/include and FCLIBS= `, and for more details if needed you can refer to the `utils/Cray_compiler_information` directory. You can also have a look at the configure script called
+`utils/Cray_compiler_information/configure_SPECFEM_for_Piz_Daint.bash`.
 
 Visualizing the subroutine calling tree of the source code
 ----------------------------------------------------------
@@ -77,7 +79,10 @@ Packages such as `doxywizard` can be used to visualize the subroutine calling tr
 Becoming a developer of the code, or making small modifications in the source code
 ----------------------------------------------------------------------------------
 
-If you want to develop new features in the code, and/or if you want to make small changes, improvements, or bug fixes, you are very welcome to contribute. To do so, i.e. to access the development branch of the source code with read/write access (in a safe way, no need to worry too much about breaking the package, there is a robot called BuildBot that is in charge of checking and validating all new contributions and changes), please visit this Web page: <https://github.com/geodynamics/specfem2d/wiki/Using-Hub>.
+If you want to develop new features in the code, and/or if you want to make small changes, improvements, or bug fixes, you are very welcome to contribute.
+
+To do so, i.e. to access the development branch of the source code with read/write access (in a safe way, no need to worry too much about breaking the package, there is a robot called BuildBot that is in charge of checking and validating all new contributions and changes), please visit this Web page:
+<https://github.com/geodynamics/specfem2d/wiki>
 
 To visualize the call tree (calling tree) of the source code, you can see the Doxygen tool available in directory `doc/call_trees_of_the_source_code`.
 
@@ -89,5 +94,5 @@ Pellegrini, F., and J. Roman. 1996. “SCOTCH: A Software Package for Static Map
 -----
 > This documentation has been automatically generated by [pandoc](http://www.pandoc.org)
 > based on the User manual (LaTeX version) in folder doc/USER_MANUAL/
-> (Jul 26, 2018)
+> (Oct  1, 2020)
 
