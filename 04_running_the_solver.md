@@ -113,7 +113,7 @@ The `half duration` of a source is obtained by \(1/\mathtt{f0}\). If the code wi
 
 to compile the code and then set the parameter `hdur` in `convolve_source_timefunction.sh` to the desired half-duration.
 
-![Comparison of the shape of a triangle and the Gaussian function actually used.<span data-label="fig:gauss.vs.triangle"></span>](figures/gauss_vs_triangle_mod.pdf)
+![Comparison of the shape of a triangle and the Gaussian function actually used.<span data-label="fig:gauss.vs.triangle"></span>](figures/gauss_vs_triangle_mod.jpg)
 <div class="figcaption" style="text-align:justify;font-size:80%"><span style="color:#9A9A9A">Figure: Comparison of the shape of a triangle and the Gaussian function actually used.<span data-label="fig:gauss.vs.triangle"></span></span></div>
 
 t0  
@@ -193,7 +193,7 @@ The axial elements file has the following structure:
 
 Which is similar to free surface files. Hence the first line contains the number of axial elements, then the other lines contain four columns: element id, number of nodes describing an axial element (always 2), first node id, second node id. Note that the axis elements must include the possible (up and/or down) PMLs elements in contact with the axis. For simplicity we assume that the mesh elements that are in contact with the symmetry axis are in contact with it by a full edge rather than by a single point, i.e. we exclude cases as that of Figure [fig:meshrestrictionontheaxis]. This amounts to imposing that the leftmost layer of elements in the mesh be structured rather than non structured; The rest of the mesh can be non structured.
 
-![[fig:meshrestrictionontheaxis] For simplicity we exclude cases in which the mesh elements that are in contact with the symmetry axis are in contact with it by a single point instead of by a full edge, such as element \(\bar{\Omega}_2\) here. This amounts to imposing that the leftmost layer of elements in the mesh be structured rather than non structured; The rest of the mesh can be non structured.](figures/meshrestrictionontheaxis-eps-converted-to.pdf)
+![[fig:meshrestrictionontheaxis] For simplicity we exclude cases in which the mesh elements that are in contact with the symmetry axis are in contact with it by a single point instead of by a full edge, such as element \(\bar{\Omega}_2\) here. This amounts to imposing that the leftmost layer of elements in the mesh be structured rather than non structured; The rest of the mesh can be non structured.](figures/meshrestrictionontheaxis-eps-converted-to.jpg)
 <div class="figcaption" style="text-align:justify;font-size:80%"><span style="color:#9A9A9A">Figure: [fig:meshrestrictionontheaxis] For simplicity we exclude cases in which the mesh elements that are in contact with the symmetry axis are in contact with it by a single point instead of by a full edge, such as element \(\bar{\Omega}_2\) here. This amounts to imposing that the leftmost layer of elements in the mesh be structured rather than non structured; The rest of the mesh can be non structured.</span></div>
 
 Note about the resolution:
@@ -253,7 +253,7 @@ In section **“\# time step parameters”**:
 In section **“\# source parameters”**:  
 The code now support multiple sources. `NSOURCE` is the number of sources. Parameters of the sources are displayed in the file `SOURCE`, which must be in the directory `DATA/`. The components of a moment tensor source must be given in N.m, not in dyne.cm as in the `DATA/CMTSOLUTION` source file of the 3D version of the code.
 
-![Example of timing for three sources. The center of the first source triangle is defined to be time zero. Note that this is NOT in general the hypocentral time, or the start time of the source (marked as `tstart`). The time shift parameter `t0` in the `SOURCE` file would be \(t1(=0)\), \(t2\), \(t3\) in this case, and the half-duration parameter, `f0`, would be \(\mathtt{hdur1}=1/\mathtt{f0}_1\), \(\mathtt{hdur2}=1/\mathtt{f0}_2\), \(\mathtt{hdur3}=1/\mathtt{f0}_3\) for the sources 1, 2, 3 respectively.<span data-label="fig:sourcetiming"></span>](figures/source_timing.pdf)
+![Example of timing for three sources. The center of the first source triangle is defined to be time zero. Note that this is NOT in general the hypocentral time, or the start time of the source (marked as `tstart`). The time shift parameter `t0` in the `SOURCE` file would be \(t1(=0)\), \(t2\), \(t3\) in this case, and the half-duration parameter, `f0`, would be \(\mathtt{hdur1}=1/\mathtt{f0}_1\), \(\mathtt{hdur2}=1/\mathtt{f0}_2\), \(\mathtt{hdur3}=1/\mathtt{f0}_3\) for the sources 1, 2, 3 respectively.<span data-label="fig:sourcetiming"></span>](figures/source_timing.jpg)
 <div class="figcaption" style="text-align:justify;font-size:80%"><span style="color:#9A9A9A">Figure: Example of timing for three sources. The center of the first source triangle is defined to be time zero. Note that this is NOT in general the hypocentral time, or the start time of the source (marked as `tstart`). The time shift parameter `t0` in the `SOURCE` file would be \(t1(=0)\), \(t2\), \(t3\) in this case, and the half-duration parameter, `f0`, would be \(\mathtt{hdur1}=1/\mathtt{f0}_1\), \(\mathtt{hdur2}=1/\mathtt{f0}_2\), \(\mathtt{hdur3}=1/\mathtt{f0}_3\) for the sources 1, 2, 3 respectively.<span data-label="fig:sourcetiming"></span></span></div>
 
 In section **“\# receiver line parameters for seismograms”**:  
@@ -434,5 +434,5 @@ Tape, Carl, Qinya Liu, and Jeroen Tromp. 2007. “Finite-Frequency Tomography Us
 -----
 > This documentation has been automatically generated by [pandoc](http://www.pandoc.org)
 > based on the User manual (LaTeX version) in folder doc/USER_MANUAL/
-> (Oct  1, 2020)
+> (Feb 14, 2021)
 
