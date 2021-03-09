@@ -21,6 +21,11 @@
   padding: unset;
 }
 
+.main-content {
+  position: relative;
+  background-color: #FFF;
+}
+
 .main-content h1, .main-content h2, .main-content h3, .main-content h4, .main-content h5, .main-content h6 {
   color: #6d696f;
 }
@@ -82,6 +87,7 @@
   -ms-transform-origin: 100% 50%;
   transform-origin: 100% 50%;
 
+  height: 450px;
   z-index: -10;
 }
 
