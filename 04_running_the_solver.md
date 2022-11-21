@@ -125,8 +125,7 @@ To go from strike / dip / slip to CMTSOLUTION moment-tensor format using the cla
 
 `./utils/CMTSOLUTION_to_AkiRichards.c`
 
-but then it is another story to make a good 2D approximation of that, because in plain-strain P-SV what you get is the equivalent of a line source in the third direction (orthogonal to the plane) rather than a 3D point source For more details on this see e.g. Section 7.3 "Two-dimensional point sources" of the book of (Pilant 1979). That book being hard to find, we scanned the related pages in file
-`discussion_of_2D_sources_and_approximations_from_Pilant_1979.pdf` in the same directory as this users manual. Another very useful reference addressing that is (Helmberger and Vidale 1988) and its recent extension (Li et al. 2014).
+but then it is another story to make a good 2D approximation of that, because in plain-strain P-SV what you get is the equivalent of a line source in the third direction (orthogonal to the plane) rather than a 3D point source For more details on this see e.g. Section 7.3 "Two-dimensional point sources" of the book of (Pilant 1979). That book being hard to find, we scanned the related pages in file `discussion_of_2D_sources_and_approximations_from_Pilant_1979.pdf` in the same directory as this users manual. Another very useful reference addressing that is (Helmberger and Vidale 1988) and its recent extension (Li et al. 2014).
 
 amplification factor
 
@@ -155,13 +154,12 @@ Axisymmetric simulations are possible in SPECFEM2D. For these simulations the 2D
        AXISYM                          = .true.
 
 The left border of the model becomes then a symmetry axis. The wavefield calculated is then physically a 3D wavefield obtained by revolution of a 2D wavefield around its left border.
-Note about the source:
-In axisymmetric geometry the whole model is symmetric with respect to this axis, including the source. Hence if the source is not on the axis it will physically have a circular shape. This is still possible and relevant for some applications as non destructive testing but is most of the time unwanted. This has to be kept in mind. In acoustic medium, as an explosion in a fluid is naturally axisymmetric, the wavefield generated has the correct 3D shape. However, if the source is put in an elastic solid, its 3D radiation pattern will be axisymmetric.
-Getting started:
-To get started a simple example is available in `EXAMPLES/axisymmetric_case_AXISYM_option`, we encourage you to read the `README` file you will find there. This example contains an example of the use of `AXISYM` option plus a validation using the semi-analytical code OASES ((Schmidt 2004)). In this example the domain studied is a water layer lying above a viscoelastic medium. The source is an explosion in the water and the domain is bounded with PMLs.
-Note about external meshers:
-Using external meshers is possible in axisymmetric geometry. An example is available in
-`EXAMPLES/paper_axisymmetry_example` with the mesher Cubit/Trelis (<http://www.csimsoft.com/trelis>). We invite you to check this example and read the previous chapter for more details. The only difference with plane-strain geometry is that SPECFEM2D needs an additional file defining axial elements. The path to this file has to be given in the `Par_file`:
+
+Note about the source: In axisymmetric geometry the whole model is symmetric with respect to this axis, including the source. Hence if the source is not on the axis it will physically have a circular shape. This is still possible and relevant for some applications as non destructive testing but is most of the time unwanted. This has to be kept in mind. In acoustic medium, as an explosion in a fluid is naturally axisymmetric, the wavefield generated has the correct 3D shape. However, if the source is put in an elastic solid, its 3D radiation pattern will be axisymmetric.
+
+Getting started: To get started a simple example is available in `EXAMPLES/axisymmetric_case_AXISYM_option`, we encourage you to read the `README` file you will find there. This example contains an example of the use of `AXISYM` option plus a validation using the semi-analytical code OASES ((Schmidt 2004)). In this example the domain studied is a water layer lying above a viscoelastic medium. The source is an explosion in the water and the domain is bounded with PMLs.
+
+Note about external meshers: Using external meshers is possible in axisymmetric geometry. An example is available in `EXAMPLES/paper_axisymmetry_example` with the mesher Cubit/Trelis (<http://www.csimsoft.com/trelis>). We invite you to check this example and read the previous chapter for more details. The only difference with plane-strain geometry is that SPECFEM2D needs an additional file defining axial elements. The path to this file has to be given in the `Par_file`:
 
        axial_elements_file             = /path/to/the/axial_elements_file
 
@@ -183,13 +181,11 @@ Which is similar to free surface files. Hence the first line contains the number
 ![For simplicity we exclude cases in which the mesh elements that are in contact with the symmetry axis are in contact with it by a single point instead of by a full edge, such as element $\bar{\Omega}_2$ here. This amounts to imposing that the leftmost layer of elements in the mesh be structured rather than non structured; The rest of the mesh can be non structured.](figures/meshrestrictionontheaxis-eps-converted-to.jpg)
 <div class="figcaption" style="text-align:justify;font-size:80%"><span style="color:#9A9A9A">Figure: For simplicity we exclude cases in which the mesh elements that are in contact with the symmetry axis are in contact with it by a single point instead of by a full edge, such as element $\bar{\Omega}_2$ here. This amounts to imposing that the leftmost layer of elements in the mesh be structured rather than non structured; The rest of the mesh can be non structured.</span></div>
 
-Note about the resolution:
-In axisymmetry a different quadrature is used in the axial elements making the number of points per wavelength necessary a slightly bigger ($\approx 25\%$) than in plane-strain.
-Note about a small remaining bug:
-It has to be noted that a small bug is still hiding somewhere in the code. Indeed the output signals generated are correct in the whole domain except in the element containing the source. This small bug has not been solved so far but not prevent to use the code.
-Note about a demo code to learn:
-A simplistic demo code is available in
-`utils/small_SEM_solver_in_Fortran_without_MPI_to_learn`. This simple code is useful to learn how the spectral-element method works in both plane-strain and axisymmetric geometries. Have a look to it if interested. Once in its directory, type `./make_Fortran_2D_axisymmetric.csh` and then `./xspecfem2D` to compile and run. The bug discussed above is not present in this small code.
+Note about the resolution: In axisymmetry a different quadrature is used in the axial elements making the number of points per wavelength necessary a slightly bigger ($\approx 25\%$) than in plane-strain.
+
+Note about a small remaining bug: It has to be noted that a small bug is still hiding somewhere in the code. Indeed the output signals generated are correct in the whole domain except in the element containing the source. This small bug has not been solved so far but not prevent to use the code.
+
+Note about a demo code to learn: A simplistic demo code is available in `utils/small_SEM_solver_in_Fortran_without_MPI_to_learn`. This simple code is useful to learn how the spectral-element method works in both plane-strain and axisymmetric geometries. Have a look to it if interested. Once in its directory, type `./make_Fortran_2D_axisymmetric.csh` and then `./xspecfem2D` to compile and run. The bug discussed above is not present in this small code.
 
 How to run anisotropic wave simulations
 ---------------------------------------
@@ -350,12 +346,14 @@ Note on the viscoelastic model used
 -----------------------------------
 
 The model used is a constant $Q$, thus with no dependence on frequency ($Q(f)$ = constant). See e.g. (Blanc et al. 2016).
+
 However in practice for technical reasons it is approximated based on the sum of different Generalized Zener body mechanisms and thus the code outputs the band in which the approximation is very good, outside of that range it can be less accurate. The logarithmic center of that frequency band is the `f0` parameter defined (in Hz) in input file `DATA/SOURCE`.
 
 Note on viscoelasticity in the 2D plane strain approximation
 ------------------------------------------------------------
 
 In 2D plane strain, one spatial dimension is much greater than the others (see for example: [http://www.engineering.ucsb.edu/ hpscicom/projects/stress/introge.pdf](http://www.engineering.ucsb.edu/ hpscicom/projects/stress/introge.pdf)) and thus $\kappa = \lambda + \mu$ in 2D plane strain (instead of $\kappa = \lambda + \frac{2}{3} \mu$ in 3D). See for example (J. M. Carcione, Kosloff, and Kosloff 1988a) equation (A9), and equation 6 in <http://cherrypit.princeton.edu/papers/paper-99.pdf>.
+
 In 2D axisymmetric I think the 2/3 coefficient is OK, but it would be worth doublechecking.
 
 References
@@ -400,5 +398,5 @@ Tape, Carl, Qinya Liu, and Jeroen Tromp. 2007. “Finite-Frequency Tomography Us
 -----
 > This documentation has been automatically generated by [pandoc](http://www.pandoc.org)
 > based on the User manual (LaTeX version) in folder doc/USER_MANUAL/
-> (Nov  9, 2022)
+> (Nov 21, 2022)
 
