@@ -28,14 +28,18 @@ You can replace the GNU compilers above (gfortran and gcc) with other compilers 
 
 Before running the `configure` script, you should probably edit file `flags.guess` to make sure that it contains the best compiler options for your system. Known issues or things to check are:
 
+Intel ifort compiler  
 See if you need to add `-assume byterecl` for your machine.
 
 In the case of that compiler, we have noticed that initial release versions sometimes have bugs or issues that can lead to wrong results when running the code, thus we *strongly* recommend using a version for which at least one service pack or update has been installed. In particular, for *version 17* of that compiler, users have reported problems (making the code crash at run time) with the `-assume buffered_io` option; if you notice problems, remove that option from file `flags.guess` or change it to `-assume nobuffered_io` and try again.
 
+IBM compiler  
 See if you need to add `-qsave` or `-qnosave` for your machine.
 
+Mac OS  
 You will probably need to install `Xcode`.
 
+IBM Blue Gene machines  
 Please refer to the manual of SPECFEM3D_Cartesian, which contains detailed instructions on how to run on Blue Gene.
 
 The SPECFEM2D software package relies on the SCOTCH library to partition meshes. The SCOTCH library (Pellegrini and Roman 1996) provides efficient static mapping, graph and mesh partitioning routines. SCOTCH is a free software package developed by François Pellegrini et al. from LaBRI and Inria in Bordeaux, France, downloadable from the web page <https://gitlab.inria.fr/scotch/scotch>. In case no SCOTCH libraries can be found on the system, the configuration will bundle the version provided with the source code for compilation. The path to an existing SCOTCH installation can to be set explicitly with the option `--with-scotch-dir`. Just as an example:

@@ -50,8 +50,10 @@ Notes about `DATA/Par_file` parameters
 
 The `DATA/Par_file` contains detailed comments and should be almost self-explanatory. Please see also the corresponding explanations in generating the mesh. Some more detailed informations are listed here for a few parameters affecting the solver:
 
+`ATTENUATION_VISCOELASTIC` or `ATTENUATION_VISCOACOUSTIC`  
 Regarding attenuation (viscoelasticity and viscoacoustic), in the `Par_file` you need to select the number of standard linear solids (N_SLS) to mimic a constant $Q$ quality factor. Using N_SLS = 3 is always safe. If (and only if) you know what you are doing, you can try to reduce that in order to reduce the cost of the simulations. Figure [1.1](#fig:selectNSLS) shows values that you can consider using (again, if and only if you know what you are doing). That table has been created by Zhinan Xie using a comparison between results obtained with a truly-constant $Q$ and results obtained with its approximation based on N_SLS standard linear solids. The comparison is performed using the time-frequency misfit and goodness-of-fit criteria proposed by (Kristeková, Kristek, and Moczo 2009). The table is drawn for a dimensionless parameter representing the distance of propagation.
 
+`USE_TRICK_FOR_BETTER_PRESSURE`  
 This option can only be used so far if all the receivers record pressure and are in acoustic elements. Use a trick to increase accuracy of pressure seismograms in fluid (acoustic) elements: use the second derivative of the source for the source time function instead of the source itself, and then record `potential_acoustic()` as pressure seismograms instead of `potential_dot_dot_acoustic()`; this is mathematically equivalent, but numerically significantly more accurate because in the explicit Newmark time scheme acceleration is accurate at zeroth order while displacement is accurate at second order, thus in fluid elements `potential_dot_dot_acoustic()` is accurate at zeroth order while `potential_acoustic()` is accurate at second order and thus contains significantly less numerical noise.
 
 ![Table showing how you can select a value of N_SLS smaller than 3, if and only if you know what you are doing.](figures/minimum_number_of_SLS_that_can_be_used_in_viscoelastic_simulation.png)
@@ -62,19 +64,25 @@ Notes about `DATA/SOURCE` parameters
 
 The `SOURCE` file located in the `DATA/` directory should be edited in the following way:
 
+`source_surf`  
 Set this flag to `.true.` to force the source to be located at the surface of the model, otherwise the sol be placed inside the medium
 
+`xs`  
 source location $x$ in meters
 
+`zs`  
 source location $z$ in meters
 
+`source_type`  
 Set this value equal to `1` for elastic forces or acoustic pressure, set this to `2` for moment tensor sources. For a plane wave including converted and reflected waves at the free surface, P wave = 1, S wave = 2, Rayleigh wave = 3; for a plane wave without converted nor reflected waves at the free surface, i.e. the incident wave only, P wave = 4, S wave = 5. (incident plane waves are turned on by parameter `initialfield` in `DATA/Par_file`).
 
+`time_function_type`  
 Choose a source-time function: set this value to `1` to use a Ricker, i.e. the second derivative of a Gaussian, `2` to use the first derivative of a Gaussian, `3` to use a Gaussian, `4` to use a Dirac or `5` to use a Heaviside source-time function. Note that we use the standard definition of a Ricker, for a dominant frequency $f_0$: $\mathrm{Ricker}(t) = (1 - 2 a t^2) e^{-a t^2}$, with $a = \pi^2 f_0^2$, whose Fourier transform is thus: $\frac{1}{2} \frac{\sqrt{\pi}\omega^2}{a^{3/2}}e^{-\frac{\omega^2}{4 a}}$ This gives the wavelet of Figure [1.2](#fig:RickerWavelet).
 
 ![We use the standard definition of a Ricker (i.e., second derivative of a Gaussian). Image taken from <http://subsurfwiki.org>.](figures/Ricker_wavelet.png)
 <div class="figcaption" style="text-align:justify;font-size:80%"><span style="color:#9A9A9A">Figure: We use the standard definition of a Ricker (i.e., second derivative of a Gaussian). Image taken from <http://subsurfwiki.org>.</span></div>
 
+`f0`  
 Set this to the dominant frequency of the source. For point-source simulations using a Heaviside source-time function (`time_function_type = 5`), we recommend setting the source frequency parameter `f0` equal to a high value, which corresponds to simulating a step source-time function, i.e., a moment-rate function that is a delta function.
 
 The `half duration` of a source is obtained by $1/\mathtt{f0}$. If the code will use a Gaussian source-time function (`time_function_type = 3`) (i.e., a signal with a shape similar to a ‘smoothed triangle’, as explained in Komatitsch and Tromp (2002) and shown in Fig [1.3](#fig:gauss.vs.triangle)), the source-time function uses a half-width of `half duration`. We prefer to run the solver with `half duration` set to zero and convolve the resulting synthetic seismograms in post-processing after the run, because this way it is easy to use a variety of source-time functions. Komatitsch and Tromp (2002) determined that the noise generated in the simulation by using a step source time function may be safely filtered out afterward based upon a convolution with the desired source time function and/or low-pass filtering. Use the serial code `convolve_source_timefunction.f90` and the script `convolve_source_timefunction.sh` for this purpose, or alternatively use signal-processing software packages such as SAC . Type
@@ -86,10 +94,13 @@ to compile the code and then set the parameter `hdur` in `convolve_source_timefu
 ![Comparison of the shape of a triangle and the Gaussian function actually used.](figures/gauss_vs_triangle_mod.jpg)
 <div class="figcaption" style="text-align:justify;font-size:80%"><span style="color:#9A9A9A">Figure: Comparison of the shape of a triangle and the Gaussian function actually used.</span></div>
 
+`t0`  
 For single sources, we recommend to set the time shift parameter `t0` equal to $0.0$. The time shift parameter would simply apply an overall time shift to the synthetics (according to the time shift of the first source), something that can be done in the post-processing. This time shift parameter can be non-zero when using multiple sources.
 
+`anglesource`  
 angle of the source (for a force only); for a plane wave, this is the incidence angle. For moment tensor sources this parameter is unused.
 
+`Mxx`,`Mzz`,`Mxz`  
 Moment tensor components (valid only for moment tensor sources, `source_type = 2`). Note that the units for the components of a moment tensor source are different in SPECFEM2D and in SPECFEM3D:
 
 SPECFEM3D:  
@@ -106,6 +117,7 @@ To go from strike / dip / slip to CMTSOLUTION moment-tensor format using the cla
 
 but then it is another story to make a good 2D approximation of that, because in plain-strain P-SV what you get is the equivalent of a line source in the third direction (orthogonal to the plane) rather than a 3D point source For more details on this see e.g. Section 7.3 "Two-dimensional point sources" of the book of (Pilant 1979). That book being hard to find, we scanned the related pages in file `discussion_of_2D_sources_and_approximations_from_Pilant_1979.pdf` in the same directory as this users manual. Another very useful reference addressing that is (Helmberger and Vidale 1988) and its recent extension (Li et al. 2014).
 
+`factor`  
 amplification factor
 
 Note, the zero time of the simulation corresponds to the center of the triangle/Gaussian, or the centroid time of the earthquake. The start time of the simulation is $t=-1.2*\mathtt{half duration} + \mathtt{t0}$ (the factor 1.2 is to make sure the moment rate function is very close to zero when starting the simulation; Heaviside functions use a factor 2.0), the half duration is obtained by $1/\mathtt{f0}$. If you prefer, you can fix this start time by setting the parameter `USER_T0` in the `constants.h` file to a positive, non-zero value. The simulation in that case would start at a starting time equal to `-USER_T0`.
@@ -230,30 +242,43 @@ For isotropic elastic/acoustic material use `I` and set `Vs` to zero to make a g
 
 For anisotropic elastic media the last three parameters, `c12 c23 c25`, are used only when the user asks the code to compute pressure for display or seismogram recording purposes. Thus, if you do not know these parameters for your anisotropic material and/or if you do not plan to display or record pressure you can ignore them and set them to zero. When pressure is used these three parameters are needed because the code needs to compute $\sigma_{yy}$, which is not equal to zero in the plane strain formulation.
 
+`rho_s`  
 = solid density
 
+`rho_f`  
 = fluid density
 
+`phi`  
 = porosity
 
+`tort`  
 = tortuosity
 
+`permxx`  
 = xx component of permeability tensor
 
+`permxz`  
 = xz,zx components of permeability tensor
 
+`permzz`  
 = zz component of permeability tensor
 
+`kappa_s`  
 = solid bulk modulus
 
+`kappa_f`  
 = fluid bulk modulus
 
+`kappa_fr`  
 = frame bulk modulus
 
+`eta_f`  
 = fluid viscosity
 
+`mu_fr`  
 = frame shear modulus
 
+`Qmu`  
 = shear quality factor
 
 Note: for the poroelastic case, `mu_s` is irrelevant. For details on the poroelastic theory see (Morency and Tromp 2008).

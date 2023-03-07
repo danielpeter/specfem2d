@@ -32,8 +32,10 @@ The default `DATA/Par_file` provided in the root directory of the code contains 
 
 If you need more details we do not have a detailed description of all the parameters for the 2D version in this manual but you can find useful information in the manuals of the 3D versions, since many parameters and the general philosophy is similar. They are available at .
 
+`NPROC`  
 If you have the code compiled with MPI support, you can specify the number of processes ($>1$) for the simulation to run on. Otherwise, this has to be set to 1 for a serial run. The mesher will use the partitioner specified by parameter `PARTITIONING_TYPE` to load-balance the mesh for multiple processes.
 
+`NGNOD`  
 Regarding mesh point numbering in the files created by the mesher, we use the classical convention of 4-node and 9-node finite elements (`NGNOD = 4` or `NGNOD = 9`, respectively):
 
              4 . . . . 7 . . . . 3
@@ -48,6 +50,7 @@ Regarding mesh point numbering in the files created by the mesher, we use the cl
 
 the local coordinate system being $\xi$ and $\eta$ (`xi` and `eta`). Note that this convention is used to describe the geometry only. In the solver the wave field is then described based on high-order Lagrange interpolants at Gauss-Lobatto-Legendre points, as is classical in spectral-element methods.
 
+`MODEL`  
 With `MODEL = default` chosen, a variety of simple velocity and density models can be defined using the `nbmodels` section in the `Par_file`.
 
 The material types can be specified by one of the following line formats:
@@ -57,18 +60,18 @@ The material types can be specified by one of the following line formats:
     III: model_number 3 rhos rhof phi c kxx kxz kzz Ks Kf Kfr etaf mufr Qmu
     IV: model_number -1 0 0 A 0 0 0 0 0 0 0 0 0 0
 
-I  
+I:  
 To make a given region acoustic, use (I) and make `Vs` be zero. To make a given region isotropic elastic, use (I) and make `Vs` be nonzero. See Section 4.1 for more details.
 
 Thus, to create acoustic (fluid) regions, just set the S wave speed to zero and the code will see that these elements are fluid and switch to the right equations there automatically, and automatically match them with the solid regions.
 
-II  
+II:  
 To make a given region anisotropic, use (II). See Section 4.3 for more details.
 
-III  
+III:  
 To make a given region poroelastic, use (III). See Section 4.4 for more details.
 
-IV  
+IV:  
 To impose a tomographic model on a given region, use (IV). For now, we only allow for a single tomography file and region. Note that the `model_number` must be strictly positive, but the following domain number must be negative (-1) for tomographic models. The values for density (rho) and Vp are ignored, however the value for Vs, i.e., `A`, must be either zero (0.0) to be recognized as an acoustic region or a positive non-zero value (e.g., 1.0) for an elastic region. The tomographic model values are overimposed on this region, and defined in the file specified by the parameter `TOMOGRAPHY_FILE`.
 
 When viscoelasticity is turned on, the `Vp` and `Vs` values that are read here are the UNRELAXED ones i.e. the values at infinite frequency unless the `READ_VELOCITIES_AT_f0` parameter is set to true, in which case they are the values at frequency $f_0$. Please also note that Qmu is always equal to Qs, but Qkappa is in general not equal to Qp. To convert one to the other see `doc/note_on_Qkappa_versus_Qp.pdf` and `utils/attenuation/conversion_from_Qkappa_Qmu_to_Qp_Qs_from_Dahlen_Tromp_959_960.f90`.
@@ -87,22 +90,31 @@ The parameter `MODEL` can also have other values specified than `default`. Possi
 
 - `legacy`: for reading in a single ASCII model file with a legacy format of very old SPECFEM2D versions (`DATA/proc***_model_velocity.dat_input`)
 
+`read_external_mesh`  
 If you are using an external mesher (like Gmsh, CUBIT/Trelis or GiD), you should set this parameter to `.true.`, with the following files defined for the mesher:
 
+`mesh_file`  
 is the file describing the mesh : first line is the number of elements, then a list of 4 nodes (quadrilaterals only) forming each elements on each line.
 
+`nodes_coords_file`  
 is the file containing the coordinates ($x$ and $z$) of each node: number of nodes on the first line, then coordinates x and z on each line.
 
+`materials_file`  
 is the number of the material for every element : an integer ranging from 1 to `nbmodels` on each line.
 
+`free_surface_file`  
 is the file describing the edges forming the acoustic free surface: number of edges on the first line, then on each line: number of the element, number of nodes forming the free surface (1 for a point, 2 for an edge), the nodes forming the free surface for this element. If you do not want any free surface, just put 0 on the first line; you then get a rigid surface instead.
 
+`axial_elements_file`  
 is the file describing the axial elements in the case of an axisymmetric simulation. See Section [\[sec:axisym\]](#sec:axisym).
 
+`absorbing_surface_file`  
 is the file describing the edges forming the absorbing boundaries: number of edges on the first line, then on each line: number of the element, number of nodes forming the absorbing edge (must always be equal to 2), the two nodes forming the absorbing edge for this element, and then the type of absorbing edge: 1 for BOTTOM, 2 for RIGHT, 3 for TOP and 4 for LEFT. Only two nodes per element can be listed, i.e., the second parameter of each line must always be equal to 2. If one of your elements has more than one edge along a given absorbing contour (e.g., if that contour has a corner) then list it twice, putting the first edge on the first line and the second edge on the second line. Do not list the same element with the same absorbing edge twice or more, otherwise absorption will not be correct because the edge integral will be improperly subtracted several times. If one of your elements has a single point along the absorbing contour rather than a full edge, do NOT list it (it would have no weight in the contour integral anyway because it would consist of a single point). If you use 9-node elements, list only the first and last points of the edge and not the intermediate point located around the middle of the edge; the right 9-node curvature will be restored automatically by the code.
 
+`tangential_detection_curve_file`  
 contains points describing the envelope, that are used for the `source_normal_to_surface` and `rec_normal_to_surface`. Should be fine grained, and ordered clockwise. Number of points on the first line, then (x,z) coordinates on each line.
 
+`READ_VELOCITIES_AT_f0`  
 shift (i.e. change) velocities read from the input file to take average physical dispersion into account, i.e. if needed change the reference frequency at which these velocities are defined internally in the code: by default, the velocity values that are read at the end of this `Par_file` of the code are supposed to be the unrelaxed values, i.e. the velocities at infinite frequency. If you set this flag to `.true.`, the values read are then those for a given frequency called `ATTENUATION_f0_REFERENCE`.
 
 Note this only has an effect, if attenuation is turned on for the simulation, i.e., either `ATTENUATION_VISCOELASTIC` or `ATTENUATION_VISCOACOUSTIC` is set to `.true.`. Otherwise, the simulation is for a purely elastic or acoustic medium and the concept of a reference frequency is not needed.
