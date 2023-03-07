@@ -48,32 +48,11 @@ Please consider these following points, when running the solver:
 Notes about `DATA/Par_file` parameters
 --------------------------------------
 
-The default `DATA/Par_file` provided in the root directory of the code contains detailed comments and should be almost self-explanatory (note that some of the older `DATA/Par_file` files provided in the `EXAMPLES` directory work fine but some of the comments they contain may be obsolete or even wrong; thus refer to the default `DATA/Par_file` instead for reliable explanations).
+The `DATA/Par_file` contains detailed comments and should be almost self-explanatory. Please see also the corresponding explanations in generating the mesh. Some more detailed informations are listed here for a few parameters affecting the solver:
+
+Regarding attenuation (viscoelasticity and viscoacoustic), in the `Par_file` you need to select the number of standard linear solids (N_SLS) to mimic a constant $Q$ quality factor. Using N_SLS = 3 is always safe. If (and only if) you know what you are doing, you can try to reduce that in order to reduce the cost of the simulations. Figure [1.1](#fig:selectNSLS) shows values that you can consider using (again, if and only if you know what you are doing). That table has been created by Zhinan Xie using a comparison between results obtained with a truly-constant $Q$ and results obtained with its approximation based on N_SLS standard linear solids. The comparison is performed using the time-frequency misfit and goodness-of-fit criteria proposed by (Kristeková, Kristek, and Moczo 2009). The table is drawn for a dimensionless parameter representing the distance of propagation.
 
 This option can only be used so far if all the receivers record pressure and are in acoustic elements. Use a trick to increase accuracy of pressure seismograms in fluid (acoustic) elements: use the second derivative of the source for the source time function instead of the source itself, and then record `potential_acoustic()` as pressure seismograms instead of `potential_dot_dot_acoustic()`; this is mathematically equivalent, but numerically significantly more accurate because in the explicit Newmark time scheme acceleration is accurate at zeroth order while displacement is accurate at second order, thus in fluid elements `potential_dot_dot_acoustic()` is accurate at zeroth order while `potential_acoustic()` is accurate at second order and thus contains significantly less numerical noise.
-
-shift (i.e. change) velocities read from the input file to take average physical dispersion into account, i.e. if needed change the reference frequency at which these velocities are defined internally in the code: by default, the velocity values that are read at the end of this Par_file of the code are supposed to be the unrelaxed values, i.e. the velocities at infinite frequency. If you set this flage to .true., the values read are then those for a given frequency called ATTENUATION_f0_REFERENCE.
-
-With `MODEL = default` chosen, a variety of simple velocity and density models can be defined using the `nbmodels` device.
-
-    I:  model_number 1 rho Vp Vs 0 0 QKappa Qmu 0 0 0 0 0 0
-    II:  model_number 2 rho c11 c13 c15 c33 c35 c55 c12 c23 c25 0 QKappa Qmu
-    III: model_number 3 rhos rhof phi c kxx kxz kzz Ks Kf Kfr etaf mufr Qmu
-    IV: model_number -1 0 0 A 0 0 0 0 0 0 0 0 0 0
-
-To make a given region acoustic, use (I) and make `Vs` be zero.
-
-To make a given region isotropic elastic, use (I) and make `Vs` be nonzero. See Section 4.1 for more details.
-
-To make a given region anisotropic, use (II). See Section 4.2 for more details.
-
-To make a given region poroeslatic, use (III). See Section 4.3 for more details.
-
-When viscoelasticity is turned on, the `Vp` and `Vs` values that are read here are the UNRELAXED ones i.e. the values at infinite frequency unless the `READ_VELOCITIES_AT_f0` parameter above is set to true, in which case they are the values at frequency $f_0$. Please also note that Qmu is always equal to Qs, but Qkappa is in general not equal to Qp. To convert one to the other see `doc/note_on_Qkappa_versus_Qp.pdf` and `utils/attenuation/conversion_from_Qkappa_Qmu_to_Qp_Qs_from_Dahlen_Tromp_959_960.f90`.
-
-With `MODEL = default` chosen, a variety of simple layered model configurations can be specified using the `nbregions` device.
-
-Regarding attenuation (viscoelasticity), in the Par_file you need to select the number of standard linear solids (N_SLS) to use to mimic a constant $Q$ quality factor. Using N_SLS = 3 is always safe. If (and only if) you know what you are doing, you can try to reduce that in order to reduce the cost of the simulations. Figure [1.1](#fig:selectNSLS) shows values that you can consider using (again, if and only if you know what you are doing). That table has been created by Zhinan Xie using a comparison between results obtained with a truly-constant $Q$ and results obtained with its approximation based on N_SLS standard linear solids. The comparison is performed using the time-frequency misfit and goodness-of-fit criteria proposed by (Kristeková, Kristek, and Moczo 2009). The table is drawn for a dimensionless parameter representing the distance of propagation.
 
 ![Table showing how you can select a value of N_SLS smaller than 3, if and only if you know what you are doing.](figures/minimum_number_of_SLS_that_can_be_used_in_viscoelastic_simulation.png)
 <div class="figcaption" style="text-align:justify;font-size:80%"><span style="color:#9A9A9A">Figure: Table showing how you can select a value of N_SLS smaller than 3, if and only if you know what you are doing.</span></div>
@@ -398,5 +377,5 @@ Tape, Carl, Qinya Liu, and Jeroen Tromp. 2007. “Finite-Frequency Tomography Us
 -----
 > This documentation has been automatically generated by [pandoc](http://www.pandoc.org)
 > based on the User manual (LaTeX version) in folder doc/USER_MANUAL/
-> (Dec 13, 2022)
+> (Mar  7, 2023)
 
