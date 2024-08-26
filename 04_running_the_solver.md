@@ -7,6 +7,7 @@
   - [How to run axisymmetric wave simulations](#sec:axisym)
   - [How to run anisotropic wave simulations](#how-to-run-anisotropic-wave-simulations)
   - [How to run poroelastic wave simulations](#how-to-run-poroelastic-wave-simulations)
+  - [How to run electromagnetic wave simulations](#how-to-run-electromagnetic-wave-simulations)
   - [Coupled simulations](#coupled-simulations)
   - [How to choose the time step](#how-to-choose-the-time-step)
   - [How to set plane waves as initial conditions](#how-to-set-plane-waves-as-initial-conditions)
@@ -213,7 +214,7 @@ How to run poroelastic wave simulations
 
 Check the following new inputs in `Par_file`:
 
-`TURN_VISCATTENUATION_ON`, `Q0`, and `FREQ0` deal with viscous damping in a poroelastic medium. `Q0` is the quality factor set at the central frequency `FREQ0`. For more details see (Morency and Tromp 2008).
+`ATTENUATION_PORO_FLUID_PART`, `Q0_poroelastic`, and `freq0_poroelastic` deal with viscous damping in a poroelastic medium. `Q0_poroelastic` is the quality factor set at the central frequency `freq0_poroelastic`. For more details see (Morency and Tromp 2008).
 
 `SIMULATION_TYPE` defines the type of simulation
 
@@ -230,7 +231,7 @@ The code now support multiple sources. `NSOURCE` is the number of sources. Param
 
 `SAVE_FORWARD` determines if the last frame of a forward simulation is saved (`.true.`) or not (`.false`)
 
-There are three possible types of models:
+There are three possible types of models for seismic wave propagation:
 
 1.  (`model_number 1 rho Vp Vs 0 0 QKappa Qmu 0 0 0 0 0 0`) or
 
@@ -284,6 +285,73 @@ For anisotropic elastic media the last three parameters, `c12 c23 c25`, are used
 Note: for the poroelastic case, `mu_s` is irrelevant. For details on the poroelastic theory see (Morency and Tromp 2008).
 
 `get_poroelastic_velocities.f90` allows to compute cpI, cpII, and cs function of the source dominant frequency. Notice that for this calculation we use `permxx` and the dominant frequency of the first source, f0(1). Caution if you use several sources with different frequencies and if you consider anistropic permeability.
+
+How to run electromagnetic wave simulations
+-------------------------------------------
+
+For more details on the electromagetic (EM) wave propagation in SPECFEM, please refer to (Morency 2020). Check the following new inputs in `Par_file`:
+
+`ATTENUATION_PERMITTIVITY`, `ATTENUATION_CONDUCTIVITY`, and `f0_electromagnetic` deal with dispersive and attenuating EM media. For more details see section 2.2 in (Morency 2020).
+
+`SIMULATION_TYPE` defines the type of simulation
+
+1.  forward simulation
+
+2.  UNUSED (purposely, for compatibility with the numbering convention used in our 3D codes)
+
+3.  adjoint method and kernels calculation – **TO DO**
+
+There are three possible types of models for seismic wave propagation and one for EM wave propagation:
+
+1.  (`model_number 1 rho Vp Vs 0 0 QKappa Qmu 0 0 0 0 0 0`) or
+
+2.  (`model_number 2 rho c11 c13 c15 c33 c35 c55 c12 c23 c25 0 0 0`) or
+
+3.  (`model_number 3 rhos rhof phi c kxx kxz kzz Ks Kf Kfr etaf mufr Qmu`) or
+
+4.  (`model_number 4 mu0 e0 e11 e33 sig11 sig33 Qe11 Qe33 Qs11 Qs33 0 0 0`).
+
+For isotropic EM material use `IV`, where
+
+`mu_0`  
+= magnetic permeability
+
+`e_0`  
+= vacuum dielectric permittivity
+
+`e_11`  
+= xx component of relative dielectric permittivity
+
+`e_33`  
+= zz component of relative dielectric permittivity
+
+`sig_11`  
+= xx component of conductivity
+
+`sig_33`  
+= zz component of conductivity
+
+`Qe_11`  
+= quality factor of xx component of permittivity
+
+`Qe_33`  
+= quality factor of zz component of permittivity
+
+`Qs_11`  
+= quality factor of xx component of conductivity
+
+`Qs_33`  
+= quality factor of zz component of conductivity
+
+`get_electromagnetic_velocities.f90` allows to compute the anisotropic EM wavespeeds as a function of the source dominant frequency. Notice that for this calculation we use the dominant frequency of the first source, f0(1). Caution if you use several sources with different frequencies.
+
+Finally, 2-D transverse electric (TE) mode, more suitable for crosshole and vertical radar profiling applications, and transverse magnetic (TM) mode, suitable for surface based reflection ground penetration radar type of applications, can be handled using the P-SV/SH flag in `Par_file`:
+
+P-SV (EM TE):  
+To run a EM waves calculation propagating in the $x$-$z$ plane, set `p_sv = .true.`
+
+SH (EM TM):  
+To run EM waves calculation travelling in the $x$-$z$ plane with a $y$-component of electric field, set `p_sv = .false.`
 
 Coupled simulations
 -------------------
@@ -391,6 +459,8 @@ Kristeková, Miriam, Jozef Kristek, and Peter Moczo. 2009. “Time-Frequency Mis
 
 Li, Dunzhu, Don Helmberger, Robert W. Clayton, and Daoyuan Sun. 2014. “Global Synthetic Seismograms Using a 2-D Finite-Difference Method.” *Geophys. J. Int.* 197 (2): 1166–83. <https://doi.org/10.1093/gji/ggu050>.
 
+Morency, C. 2020. “Electromagnetic Wave Propagation Based Upon Spectral-Element Methodology in Dispersive and Attenuating Media.” *Geophys. J. Int.* 220: 951–66.
+
 Morency, C., and J. Tromp. 2008. “Spectral-Element Simulations of Wave Propagation in Poroelastic Media.” *Geophys. J. Int.* 175: 301–45.
 
 Pilant, Walter L. 1979. *Elastic Waves in the Earth*. Vol. 11 of "Developments in Solid Earth Geophysics" Series. Amsterdam, The Netherlands: Elsevier Scientific Publishing Company.
@@ -402,5 +472,5 @@ Tape, Carl, Qinya Liu, and Jeroen Tromp. 2007. “Finite-Frequency Tomography Us
 -----
 > This documentation has been automatically generated by [pandoc](http://www.pandoc.org)
 > based on the User manual (LaTeX version) in folder doc/USER_MANUAL/
-> (Feb  8, 2024)
+> (Aug 26, 2024)
 
