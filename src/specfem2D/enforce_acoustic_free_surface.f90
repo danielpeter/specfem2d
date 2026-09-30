@@ -41,6 +41,7 @@
   use constants, only: CUSTOM_REAL,ZERO
 
   use specfem_par, only: acoustic_surface,ibool,nelem_acoustic_surface,nglob,this_ibool_is_a_periodic_edge,coord
+  use shared_parameters, only: GRAVITY
 
   implicit none
 
@@ -62,6 +63,9 @@
 
   ! checks if anything to do
   if (nelem_acoustic_surface == 0) return
+
+  ! gravity: dynamic free-surface condition is handled through acoustic mass matrix
+  if (GRAVITY) return
 
   do ispec_acoustic_surface = 1, nelem_acoustic_surface
 

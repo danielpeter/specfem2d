@@ -563,9 +563,16 @@
           if (P_SV) then
             iglob = ibool(i,j,ispec)
             ! sigma_xx = sigma_xx - rho * u_z * g
-            sigma_xx = sigma_xx - rhol * dummy_loc(2,i,j) * GRAVITY_CONST
-            ! sigma_zx = sigma_zx + rho * u_x * g
-            sigma_zx = sigma_zx + rhol * dummy_loc(1,i,j) * GRAVITY_CONST
+            sigma_xx = sigma_xx - rhol * dummy_loc(2,i,j) * real(GRAVITY_CONST, kind=CUSTOM_REAL)
+            ! sigma_xz = sigma_xz + rho * u_x * g
+            sigma_xz = sigma_xz + rhol * dummy_loc(1,i,j) * real(GRAVITY_CONST, kind=CUSTOM_REAL)
+            ! axisymmetric case: the hoop direction theta is a horizontal direction as well,
+            ! thus the G-tensor contributes to sigma_thetatheta like to any horizontal direction:
+            !   sigma_thetatheta = sigma_thetatheta - rho * u_z * g
+            ! (this is the analogue of sigma_xx and sigma_yy both getting - rho * u_z * g in 3D Cartesian)
+            if (AXISYM) then
+              sigma_thetatheta(i,j) = sigma_thetatheta(i,j) - rhol * dummy_loc(2,i,j) * real(GRAVITY_CONST, kind=CUSTOM_REAL)
+            endif
           endif
         endif
 

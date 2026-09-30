@@ -36,6 +36,7 @@
   use constants, only: USE_ENFORCE_FIELDS,ALPHA_LDDRK,BETA_LDDRK,ZERO,USE_A_STRONG_FORMULATION_FOR_E1
 
   use specfem_par
+  use shared_parameters, only: GRAVITY
 
   implicit none
 
@@ -50,7 +51,9 @@
   if ((.not. any_acoustic) .and. (.not. SOURCE_IS_MOVING)) return
 
   ! free surface for an acoustic medium
-  call enforce_acoustic_free_surface(potential_dot_dot_acoustic,potential_dot_acoustic,potential_acoustic)
+  if (.not. GRAVITY) then
+    call enforce_acoustic_free_surface(potential_dot_dot_acoustic,potential_dot_acoustic,potential_acoustic)
+  endif
 
 !! DK DK QUENTIN visco begin
   ! viscoacoustic attenuation for fluid media
@@ -223,7 +226,9 @@
   end select
 
   ! free surface for an acoustic medium
-  call enforce_acoustic_free_surface(potential_dot_dot_acoustic,potential_dot_acoustic,potential_acoustic)
+  if (.not. GRAVITY) then
+    call enforce_acoustic_free_surface(potential_dot_dot_acoustic,potential_dot_acoustic,potential_acoustic)
+  endif
 
   end subroutine compute_forces_viscoacoustic_main
 
@@ -271,7 +276,9 @@
   endif
 
   ! free surface for an acoustic medium
-  call enforce_acoustic_free_surface(b_potential_dot_dot_acoustic,b_potential_dot_acoustic,b_potential_acoustic)
+  if (.not. GRAVITY) then
+    call enforce_acoustic_free_surface(b_potential_dot_dot_acoustic,b_potential_dot_acoustic,b_potential_acoustic)
+  endif
 
   ! distinguishes two runs: for elements on MPI interfaces, and elements within the partitions
   do iphase = 1,2
@@ -369,7 +376,9 @@
   end select
 
   ! free surface for an acoustic medium
-  call enforce_acoustic_free_surface(b_potential_dot_dot_acoustic,b_potential_dot_acoustic,b_potential_acoustic)
+  if (.not. GRAVITY) then
+    call enforce_acoustic_free_surface(b_potential_dot_dot_acoustic,b_potential_dot_acoustic,b_potential_acoustic)
+  endif
 
   end subroutine compute_forces_viscoacoustic_main_backward
 

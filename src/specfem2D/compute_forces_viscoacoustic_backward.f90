@@ -31,6 +31,8 @@
 !
 !========================================================================
 
+! this routine is not used yet, left here for future case...
+
   subroutine compute_forces_viscoacoustic_backward(b_potential_dot_dot_acoustic,b_potential_acoustic,iphase)
 
 

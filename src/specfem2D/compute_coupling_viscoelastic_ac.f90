@@ -54,6 +54,10 @@
   use specfem_par, only: PML_BOUNDARY_CONDITIONS,nspec_PML,ispec_is_PML,spec_to_PML,region_CPML, &
                 K_x_store,K_z_store,d_x_store,d_z_store,alpha_x_store,alpha_z_store,potential_acoustic_old
 
+  ! for gravity
+  use shared_parameters, only: GRAVITY,GRAVITY_CONST
+  use specfem_par, only: hprime_xx,hprime_zz,hprimeBar_xx
+
   implicit none
 
   !local variable
@@ -65,6 +69,9 @@
   ! PML
   double precision :: kappa_x,kappa_z,d_x,d_z,alpha_x,alpha_z,beta_x,beta_z, &
                       A0,A1,A2,A3,A4,bb_1,coef0_1,coef1_1,coef2_1,bb_2,coef0_2,coef1_2,coef2_2
+  ! for gravity
+  integer :: k
+  real(kind=CUSTOM_REAL) :: dux_dxi,dux_dgamma,dpotentialdzl
 
   ! loop on all the coupling edges
   do inum = 1,num_fluid_solid_edges
@@ -91,7 +98,47 @@
         ! coupling term:
         !   n * T = - p_fluid n = \partial_t^2 chi n
         ! note: the negative sign is due to the normal nx,nz below being defined in opposite direction (from fluid to solid)
+        !
+        ! pressure
         pressure = - potential_dot_dot_acoustic(iglob)
+
+        ! gravity
+        if (GRAVITY) then
+          ! note: uses potential chi such that displacement s = 1/rho grad(chi),
+          !       pressure becomes: p = - kappa ( div( s ) ) = - dot_dot_chi + grad(chi) * g
+          !
+          !  g only acting in negative z-direction, i.e. g = - g z_hat and term: + grad(chi)* g = - g \partial_z \chi
+          !
+          ! compute dpotentialdzl
+          dux_dxi = 0._CUSTOM_REAL
+          dux_dgamma = 0._CUSTOM_REAL
+          if (AXISYM) then
+            ! AXISYM case
+            if (is_on_the_axis(ispec_acoustic)) then
+              do k = 1,NGLJ
+                dux_dxi = dux_dxi + potential_acoustic(ibool(k,j,ispec_acoustic)) * hprimeBar_xx(i,k)
+              enddo
+            else
+              do k = 1,NGLLX
+                dux_dxi = dux_dxi + potential_acoustic(ibool(k,j,ispec_acoustic)) * hprime_xx(i,k)
+              enddo
+            endif
+          else
+            ! default case
+            do k = 1,NGLLX
+              dux_dxi = dux_dxi + potential_acoustic(ibool(k,j,ispec_acoustic)) * hprime_xx(i,k)
+            enddo
+          endif
+          do k = 1,NGLLZ
+            dux_dgamma = dux_dgamma + potential_acoustic(ibool(i,k,ispec_acoustic)) * hprime_zz(j,k)
+          enddo
+          ! term \partial_z \chi
+          dpotentialdzl = dux_dxi * xiz(i,j,ispec_acoustic) + dux_dgamma * gammaz(i,j,ispec_acoustic)
+
+          ! perturbed fluid pressure under gravity: p* = - \kappa \nabla \cdot \mathbf{s} = - \partial_t^2 chi + \nabla chi \cdot g
+          ! with g only acting in negative z-direction g = (0, -g): \nabla chi \cdot g = - g \partial_z \chi
+          pressure = pressure - real(GRAVITY_CONST, kind=CUSTOM_REAL) * dpotentialdzl
+        endif
       else
         ! kernel simulations
         ! new definition of adjoint displacement and adjoint potential
@@ -264,6 +311,11 @@
                          b_potential_dot_dot_acoustic,b_accel_elastic,fluid_solid_acoustic_ispec, &
                          fluid_solid_acoustic_iedge,fluid_solid_elastic_ispec,fluid_solid_elastic_iedge, &
                          AXISYM,coord,is_on_the_axis,xiglj,wxglj
+
+  ! for gravity
+  use shared_parameters, only: GRAVITY,GRAVITY_CONST
+  use specfem_par, only: b_potential_acoustic,hprime_xx,hprime_zz,hprimeBar_xx
+
   implicit none
 
   !local variable
@@ -271,6 +323,9 @@
   real(kind=CUSTOM_REAL) :: b_pressure,xxi,zxi,xgamma,zgamma,jacobian1D,nx,nz,weight
   ! axisym
   real(kind=CUSTOM_REAL), dimension(NGLJ,NGLLZ) :: r_xiplus1
+  ! for gravity
+  integer :: k
+  real(kind=CUSTOM_REAL) :: dux_dxi,dux_dgamma,dpotentialdzl
 
   ! loop on all the coupling edges
   do inum = 1,num_fluid_solid_edges
@@ -291,7 +346,46 @@
       j = jvalue_inverse(ipoin1D,iedge_acoustic)
       iglob = ibool(i,j,ispec_acoustic)
 
-      b_pressure = - b_potential_dot_dot_acoustic(iglob)
+      ! pressure
+      if (GRAVITY) then
+        ! note: uses potential chi such that displacement s = 1/rho grad(chi),
+        !       pressure becomes: p = - kappa ( div( s ) ) = - dot_dot_chi + grad(chi) * g
+        !
+        !  g only acting in negative z-direction, i.e. g = - g z_hat and term: + grad(chi)* g = - g \partial_z \chi
+        !
+        ! compute dpotentialdzl
+        dux_dxi = 0._CUSTOM_REAL
+        dux_dgamma = 0._CUSTOM_REAL
+        if (AXISYM) then
+          ! AXISYM case
+          if (is_on_the_axis(ispec_acoustic)) then
+            do k = 1,NGLJ
+              dux_dxi = dux_dxi + b_potential_acoustic(ibool(k,j,ispec_acoustic)) * hprimeBar_xx(i,k)
+            enddo
+          else
+            do k = 1,NGLLX
+              dux_dxi = dux_dxi + b_potential_acoustic(ibool(k,j,ispec_acoustic)) * hprime_xx(i,k)
+            enddo
+          endif
+        else
+          ! default case
+          do k = 1,NGLLX
+            dux_dxi = dux_dxi + b_potential_acoustic(ibool(k,j,ispec_acoustic)) * hprime_xx(i,k)
+          enddo
+        endif
+        do k = 1,NGLLZ
+          dux_dgamma = dux_dgamma + b_potential_acoustic(ibool(i,k,ispec_acoustic)) * hprime_zz(j,k)
+        enddo
+        ! term \partial_z \chi
+        dpotentialdzl = dux_dxi * xiz(i,j,ispec_acoustic) + dux_dgamma * gammaz(i,j,ispec_acoustic)
+
+        ! perturbed fluid pressure under gravity: p* = - \kappa \nabla \cdot \mathbf{s} = - \partial_t^2 chi + \nabla chi \cdot g
+        ! with g only acting in negative z-direction g = (0, -g): \nabla chi \cdot g = - g \partial_z \chi
+        b_pressure = - b_potential_dot_dot_acoustic(iglob) - real(GRAVITY_CONST, kind=CUSTOM_REAL) * dpotentialdzl
+      else
+        ! no-gravity case
+        b_pressure = - b_potential_dot_dot_acoustic(iglob)
+      endif
 
       ! get point values for the elastic side
       ii2 = ivalue(ipoin1D,iedge_elastic)

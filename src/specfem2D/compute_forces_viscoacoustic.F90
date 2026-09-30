@@ -52,7 +52,9 @@
                          hprime_zz,hprimewgll_zz,wxgll,wzgll, &
                          AXISYM,is_on_the_axis,coord,hprimeBar_xx,hprimeBarwglj_xx,xiglj,wxglj,ATTENUATION_VISCOACOUSTIC, &
                          N_SLS, iglob_is_forced,time_stepping_scheme,phi_nu1,inv_tau_sigma_nu1, &
-                         e1_acous,dot_e1
+                         e1_acous,dot_e1,kappastore
+
+  use shared_parameters, only: GRAVITY,GRAVITY_CONST
 
   ! overlapping communication
   use specfem_par, only: nspec_inner_acoustic,nspec_outer_acoustic,phase_ispec_inner_acoustic
@@ -98,6 +100,9 @@
 
   real(kind=CUSTOM_REAL) :: fac
   real(kind=CUSTOM_REAL) :: temp1l,temp2l,sum_forces,forces_attenuation
+
+  ! for gravity
+  real(kind=CUSTOM_REAL) :: fac_z,gravity_term
 
   ! local PML parameters
   real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLZ) :: potential_dot_dot_acoustic_PML
@@ -296,6 +301,23 @@
               ! sums contributions from each element to the global values
               potential_dot_dot_acoustic(iglob) = potential_dot_dot_acoustic(iglob) &
                                                   - (wzgll(j) * temp1l + wxglj(i) * temp2l)
+
+              ! gravity
+              if (GRAVITY) then
+                ! uses potential definition: s = 1/rho grad(chi)
+                ! for details, see: doc/how_to/README_acoustic_gravity_free_surface.md
+                !
+                ! gravity term: 1/kappa grad(chi) * g
+                ! assumes that g only acts in (negative) z-direction
+                !
+                ! adds gravity volume term: 1/kappa grad(chi) * g = - g/kappa \partial_z \chi
+                jacobianl = deriv_mapping(5,i,j,ispec)
+                fac_z = - real(GRAVITY_CONST, kind=CUSTOM_REAL) / kappastore(i,j,ispec)
+                gravity_term = jacobianl * wzgll(j) * wxglj(i) * r_xiplus1(i,j) * fac_z * dux_dzl(i,j)
+                potential_dot_dot_acoustic(iglob) = potential_dot_dot_acoustic(iglob) + gravity_term
+              endif
+
+              ! attenuation
               if (ATTENUATION_VISCOACOUSTIC .and. (.not. USE_A_STRONG_FORMULATION_FOR_E1) .and. time_stepping_scheme > 1) &
                 dot_e1(iglob,:) = dot_e1(iglob,:) - (wzgll(j) * temp1l + wxglj(i) * temp2l)
             endif
@@ -316,6 +338,17 @@
               ! sums contributions from each element to the global values
               potential_dot_dot_acoustic(iglob) = potential_dot_dot_acoustic(iglob) &
                                                   - (wzgll(j) * temp1l + wxgll(i) * temp2l)
+
+              ! gravity
+              if (GRAVITY) then
+                ! adds gravity volume term: 1/kappa grad(chi) * g = - g/kappa \partial_z \chi
+                jacobianl = deriv_mapping(5,i,j,ispec)
+                fac_z = - real(GRAVITY_CONST, kind=CUSTOM_REAL) / kappastore(i,j,ispec)
+                gravity_term = jacobianl * wzgll(j) * wxgll(i) * coord(1,iglob) * fac_z * dux_dzl(i,j)
+                potential_dot_dot_acoustic(iglob) = potential_dot_dot_acoustic(iglob) + gravity_term
+              endif
+
+              ! attenuation
               if (ATTENUATION_VISCOACOUSTIC .and. (.not. USE_A_STRONG_FORMULATION_FOR_E1) .and. time_stepping_scheme > 1) &
                 dot_e1(iglob,:) = dot_e1(iglob,:) - (wzgll(j) * temp1l + wxgll(i) * temp2l)
             endif
@@ -339,6 +372,22 @@
             sum_forces = wzgll(j) * temp1l + wxgll(i) * temp2l
             potential_dot_dot_acoustic(iglob) = potential_dot_dot_acoustic(iglob) - sum_forces
 
+            ! gravity
+            if (GRAVITY) then
+              ! uses potential definition: s = 1/rho grad(chi)
+              ! for details, see: doc/how_to/README_acoustic_gravity_free_surface.md
+              !
+              ! gravity term: 1/kappa grad(chi) * g
+              ! assumes that g only acts in (negative) z-direction
+              !
+              ! adds gravity volume term: 1/kappa grad(chi) * g = - g/kappa \partial_z \chi
+              jacobianl = deriv_mapping(5,i,j,ispec)
+              fac_z = - real(GRAVITY_CONST, kind=CUSTOM_REAL) / kappastore(i,j,ispec)
+              gravity_term = jacobianl * wxgll(i) * wzgll(j) * fac_z * dux_dzl(i,j)
+              potential_dot_dot_acoustic(iglob) = potential_dot_dot_acoustic(iglob) + gravity_term
+            endif
+
+            ! attenuation
             if (ATTENUATION_VISCOACOUSTIC .and. (.not. USE_A_STRONG_FORMULATION_FOR_E1) .and. time_stepping_scheme > 1) &
               dot_e1(iglob,:) = dot_e1(iglob,:) - sum_forces
 

@@ -108,7 +108,10 @@ TRACE("Kernel_2");
                                                                         mp->d_e13,
                                                                         mp->d_dux_dxl_old,
                                                                         mp->d_duz_dzl_old,
-                                                                        mp->d_dux_dzl_plus_duz_dxl_old);
+                                                                        mp->d_dux_dzl_plus_duz_dxl_old,
+                                                                        mp->d_rhostore,
+                                                                        mp->gravity,
+                                                                        mp->gravity_const);
       }
       if (compute_wavefield_2){
         // this run only happens with UNDO_ATTENUATION_AND_OR_PML on
@@ -142,7 +145,10 @@ TRACE("Kernel_2");
                                                                         mp->d_b_e13,
                                                                         mp->d_b_dux_dxl_old,
                                                                         mp->d_b_duz_dzl_old,
-                                                                        mp->d_b_dux_dzl_plus_duz_dxl_old);
+                                                                        mp->d_b_dux_dzl_plus_duz_dxl_old,
+                                                                        mp->d_rhostore,
+                                                                        mp->gravity,
+                                                                        mp->gravity_const);
       }
     }else{
       // anisotropy, no attenuation
@@ -167,7 +173,10 @@ TRACE("Kernel_2");
                                                                           mp->d_ispec_is_anisotropic,
                                                                           mp->d_c11store,mp->d_c12store,mp->d_c13store,
                                                                           mp->d_c15store,mp->d_c23store,mp->d_c25store,
-                                                                          mp->d_c33store,mp->d_c35store,mp->d_c55store);
+                                                                          mp->d_c33store,mp->d_c35store,mp->d_c55store,
+                                                                          mp->d_rhostore,
+                                                                          mp->gravity,
+                                                                          mp->gravity_const);
       }
       if (compute_wavefield_2){
         // backward/reconstructed wavefields -> FORWARD_OR_ADJOINT == 3
@@ -190,7 +199,10 @@ TRACE("Kernel_2");
                                                                           mp->d_ispec_is_anisotropic,
                                                                           mp->d_c11store,mp->d_c12store,mp->d_c13store,
                                                                           mp->d_c15store,mp->d_c23store,mp->d_c25store,
-                                                                          mp->d_c33store,mp->d_c35store,mp->d_c55store);
+                                                                          mp->d_c33store,mp->d_c35store,mp->d_c55store,
+                                                                          mp->d_rhostore,
+                                                                          mp->gravity,
+                                                                          mp->gravity_const);
       }
     }
   }else{
@@ -224,7 +236,10 @@ TRACE("Kernel_2");
                                                                         mp->d_e13,
                                                                         mp->d_dux_dxl_old,
                                                                         mp->d_duz_dzl_old,
-                                                                        mp->d_dux_dzl_plus_duz_dxl_old);
+                                                                        mp->d_dux_dzl_plus_duz_dxl_old,
+                                                                        mp->d_rhostore,
+                                                                        mp->gravity,
+                                                                        mp->gravity_const);
       }
       if (compute_wavefield_2){
         // backward/reconstructed wavefields -> FORWARD_OR_ADJOINT == 3
@@ -253,7 +268,10 @@ TRACE("Kernel_2");
                                                                         mp->d_b_e13,
                                                                         mp->d_b_dux_dxl_old,
                                                                         mp->d_b_duz_dzl_old,
-                                                                        mp->d_b_dux_dzl_plus_duz_dxl_old);
+                                                                        mp->d_b_dux_dzl_plus_duz_dxl_old,
+                                                                        mp->d_rhostore,
+                                                                        mp->gravity,
+                                                                        mp->gravity_const);
       }
     } else {
       // isotropic, no attenuation
@@ -277,7 +295,10 @@ TRACE("Kernel_2");
                                                                           mp->simulation_type,
                                                                           mp->p_sv,
                                                                           mp->pml_boundary_conditions,
-                                                                          mp->d_spec_to_pml);
+                                                                          mp->d_spec_to_pml,
+                                                                          mp->d_rhostore,
+                                                                          mp->gravity,
+                                                                          mp->gravity_const);
 
         // PML elements
         if (mp->pml_boundary_conditions){
@@ -321,7 +342,9 @@ TRACE("Kernel_2");
                                                                                 mp->alphax_store,
                                                                                 mp->alphaz_store,
                                                                                 mp->betax_store,
-                                                                                mp->betaz_store);
+                                                                                mp->betaz_store,
+                                                                                mp->gravity,
+                                                                                mp->gravity_const);
         } // PML
       }
       // backward/reconstructed wavefield
@@ -344,7 +367,10 @@ TRACE("Kernel_2");
                                                                            mp->simulation_type,
                                                                            mp->p_sv,
                                                                            mp->pml_boundary_conditions,
-                                                                           mp->d_spec_to_pml);
+                                                                           mp->d_spec_to_pml,
+                                                                           mp->d_rhostore,
+                                                                           mp->gravity,
+                                                                           mp->gravity_const);
       }
     }
   } // ANISOTROPY

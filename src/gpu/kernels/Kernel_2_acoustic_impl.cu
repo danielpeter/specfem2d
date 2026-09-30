@@ -86,7 +86,7 @@ extern realw_texture d_wxgll_xx_tex;
 //   - hiding memory latency: to minimize waiting times to retrieve a memory value from global memory, we put
 //                some more calculations into the same code block before calling syncthreads(). this should help the
 //                compiler to move independent calculations to wherever it can overlap it with memory access operations.
-//                note, especially the if (gravity )-block locations are very sensitive
+//                note, especially the if (gravity)-block locations are very sensitive
 //                for optimal register usage and compiler optimizations
 //
 
@@ -117,8 +117,11 @@ Kernel_2_acoustic_impl(const int nb_blocks_to_compute,
                        realw_const_p d_hprimewgll_xx,
                        realw_const_p d_wxgll,
                        const realw* d_rhostore,
+                       const realw* d_kappastore,
                        int PML,
-                       int* d_spec_to_pml){
+                       int* d_spec_to_pml,
+                       const int gravity,
+                       const realw gravity_const){
 
   // block-id == number of local element id in phase_ispec array
   int bx = blockIdx.y*gridDim.x+blockIdx.x;
@@ -135,10 +138,9 @@ Kernel_2_acoustic_impl(const int nb_blocks_to_compute,
 
   realw temp1l,temp3l;
   realw xixl,xizl,gammaxl,gammazl;
-
   realw dpotentialdxl,dpotentialdzl;
-  realw rho_invl_times_jacobianl;
-
+  realw rho_invl_times_jacobianl,jacobianl;
+  realw fac_z;
   realw sum_terms;
 
   __shared__ realw s_dummy_loc[2*NGLL2];
@@ -226,7 +228,8 @@ Kernel_2_acoustic_impl(const int nb_blocks_to_compute,
   gammaxl = d_gammax[offset];
   gammazl = d_gammaz[offset];
 
-  rho_invl_times_jacobianl = 1.f /(d_rhostore[offset] * (xixl*gammazl-gammaxl*xizl));
+  jacobianl = 1.f / (xixl*gammazl-gammaxl*xizl);
+  rho_invl_times_jacobianl = jacobianl / d_rhostore[offset];
 
 // counts:
 // + 5 FLOP
@@ -293,8 +296,8 @@ Kernel_2_acoustic_impl(const int nb_blocks_to_compute,
 // + 0 BYTE
 
     // form the dot product with the test vector
-    s_temp1[tx] = sh_wxgll[J]*rho_invl_times_jacobianl  * (dpotentialdxl*xixl  + dpotentialdzl*xizl)  ;
-    s_temp3[tx] = sh_wxgll[I]*rho_invl_times_jacobianl  * (dpotentialdxl*gammaxl + dpotentialdzl*gammazl)  ;
+    s_temp1[tx] = sh_wxgll[J]*rho_invl_times_jacobianl * (dpotentialdxl*xixl  + dpotentialdzl*xizl)  ;
+    s_temp3[tx] = sh_wxgll[I]*rho_invl_times_jacobianl * (dpotentialdxl*gammaxl + dpotentialdzl*gammazl)  ;
 
 // counts:
 // + 2 * 6 FLOP = 12 FLOP
@@ -316,6 +319,14 @@ Kernel_2_acoustic_impl(const int nb_blocks_to_compute,
 // + NGLLX * 11 FLOP = 55 FLOP
 //
 // + 0 BYTE
+
+    // adds gravity contribution
+    // gravity volume term: 1/kappa grad(chi) . g = - g/kappa \partial_z chi
+    // assumes a constant gravity acting only in (negative) z-direction
+    if (gravity) {
+      fac_z = - gravity_const / d_kappastore[ispec*NGLL2 + tx];
+      sum_terms += jacobianl * sh_wxgll[I] * sh_wxgll[J] * fac_z * dpotentialdzl;
+    }
 
     // assembles potential array
     if (k==0) {
@@ -381,7 +392,9 @@ Kernel_2_acoustic_PML_impl(const int nb_blocks_to_compute,
                            realw* alphax_store,
                            realw* alphaz_store,
                            realw* betax_store,
-                           realw* betaz_store){
+                           realw* betaz_store,
+                           const int gravity,
+                           const realw gravity_const){
 
   // block-id == number of local element id in phase_ispec array
   int bx = blockIdx.y*gridDim.x+blockIdx.x;
@@ -393,10 +406,10 @@ Kernel_2_acoustic_PML_impl(const int nb_blocks_to_compute,
 
   realw temp1l,temp3l;
   realw xixl,xizl,gammaxl,gammazl;
-
   realw dpotentialdxl,dpotentialdzl;
-  realw rho_invl_times_jacobianl;
-
+  realw rho_invl_times_jacobianl,jacobianl;
+  realw fac_z;
+  realw gravity_term;
   realw sum_terms;
 
   __shared__ realw s_dummy_loc[NGLL2];
@@ -457,7 +470,8 @@ Kernel_2_acoustic_PML_impl(const int nb_blocks_to_compute,
   rhol = d_rhostore[offset];
   kappal = d_kappastore[ispec*NGLL2 + tx]; // non-padded
 
-  rho_invl_times_jacobianl = 1.f /(rhol * (xixl*gammazl-gammaxl*xizl));
+  jacobianl = 1.f / (xixl*gammazl-gammaxl*xizl);
+  rho_invl_times_jacobianl = jacobianl / rhol;
 
   // loads hprime into shared memory
 #ifdef USE_TEXTURES_CONSTANTS
@@ -495,6 +509,16 @@ Kernel_2_acoustic_PML_impl(const int nb_blocks_to_compute,
   // derivatives of potential
   dpotentialdxl = xixl*temp1l + gammaxl*temp3l;
   dpotentialdzl = xizl*temp1l + gammazl*temp3l;
+
+  // adds gravity contribution
+  // gravity volume term: 1/kappa grad(chi) . g = - g/kappa \partial_z chi
+  // assumes a constant gravity acting only in (negative) z-direction;
+  // note: uses the potential gradient before PML convolution (dpotentialdzl is modified below)
+  gravity_term = 0.f;
+  if (gravity) {
+    fac_z = - gravity_const / kappal;
+    gravity_term = jacobianl * sh_wxgll[I] * sh_wxgll[J] * fac_z * dpotentialdzl;
+  }
 
   // PML
   // local PML array index
@@ -733,7 +757,7 @@ Kernel_2_acoustic_PML_impl(const int nb_blocks_to_compute,
     A4 = 0.5f * alphax * alphax * (fac1 - alphax);
     //pml_contrib = sh_wxgll[J] * sh_wxgll[I] * fac * (A1 * potential_dot[iglob] + A2 * s_dummy_loc[tx] + A3 * r5 + A4 * r6);
   }
-  fac = rho_invl_times_jacobianl * rhol / kappal;    // jacobianl / kappal
+  fac = jacobianl / kappal;    // jacobianl / kappal
   pml_contrib = sh_wxgll[J] * sh_wxgll[I] * fac * (A1 * potential_dot[iglob] + A2 * s_dummy_loc[tx] + A3 * r5 + A4 * r6);
 
   // Update derivatives
@@ -836,7 +860,12 @@ Kernel_2_acoustic_PML_impl(const int nb_blocks_to_compute,
     sum_terms -= s_temp1[J*NGLLX+l] * sh_hprimewgll_xx[I*NGLLX+l] + s_temp3[l*NGLLX+I] * sh_hprimewgll_xx[J*NGLLX+l];
   }
 
-  // assembles potential array
+  // adds gravity contribution
+  if (gravity) {
+    sum_terms += gravity_term;
+  }
+
+  // assembles potential array (including gravity contribution)
   atomicAdd(&d_potential_dot_dot_acoustic[iglob],sum_terms - pml_contrib);
 }
 
@@ -867,18 +896,23 @@ Kernel_2_viscoacoustic_impl(const int nb_blocks_to_compute,
                             realw_p d_e1_acous,
                             const realw* d_A_newmark,
                             const realw* d_B_newmark,
-                            realw_p d_sum_forces_old){
+                            realw_p d_sum_forces_old,
+                            const realw* d_kappastore,
+                            const int gravity,
+                            const realw gravity_const){
 
   // block-id == number of local element id in phase_ispec array
   int bx = blockIdx.y*gridDim.x+blockIdx.x;
   int tx = threadIdx.x;
+
   int I,J;
-  int iglob,offset,offset_align,i_sls;
+  int ispec,iglob,offset,offset_align,i_sls;
 
   realw temp1l,temp3l;
   realw xixl,xizl,gammaxl,gammazl;
   realw dpotentialdxl,dpotentialdzl;
-  realw rho_invl_times_jacobianl;
+  realw rho_invl_times_jacobianl,jacobianl;
+  realw fac_z;
   realw sum_terms;
   realw sum_forces_old,forces_attenuation,a_newmark;
   realw e1_acous_load[N_SLS];
@@ -892,9 +926,11 @@ Kernel_2_viscoacoustic_impl(const int nb_blocks_to_compute,
 
   if (bx >= nb_blocks_to_compute ) return;
 
-  I =d_phase_ispec_inner_acoustic[bx + num_phase_ispec_acoustic*(d_iphase-1)]-1;
-  offset = I*NGLL2_PADDED + tx;
-  offset_align = I*NGLL2 + tx;
+  ispec = d_phase_ispec_inner_acoustic[bx + num_phase_ispec_acoustic*(d_iphase-1)] - 1;
+
+  offset = ispec*NGLL2_PADDED + tx;
+  offset_align = ispec*NGLL2 + tx;
+
   iglob = d_ibool[offset] - 1;
 
 #ifdef USE_TEXTURES_FIELDS
@@ -912,7 +948,8 @@ Kernel_2_viscoacoustic_impl(const int nb_blocks_to_compute,
   gammaxl = d_gammax[offset];
   gammazl = d_gammaz[offset];
 
-  rho_invl_times_jacobianl = 1.f /(d_rhostore[offset] * (xixl*gammazl-gammaxl*xizl));
+  jacobianl = 1.f / (xixl*gammazl-gammaxl*xizl);
+  rho_invl_times_jacobianl = jacobianl / d_rhostore[offset];
 
   for (i_sls=0;i_sls<N_SLS;i_sls++)  e1_acous_load[i_sls] = d_e1_acous[N_SLS*offset_align+i_sls];
 
@@ -948,8 +985,8 @@ Kernel_2_viscoacoustic_impl(const int nb_blocks_to_compute,
 
   dpotentialdxl = xixl*temp1l +  gammaxl*temp3l;
   dpotentialdzl = xizl*temp1l +  gammazl*temp3l;
-  s_temp1[tx] = sh_wxgll[J]*rho_invl_times_jacobianl  * (dpotentialdxl*xixl  + dpotentialdzl*xizl)  ;
-  s_temp3[tx] = sh_wxgll[I]*rho_invl_times_jacobianl  * (dpotentialdxl*gammaxl + dpotentialdzl*gammazl)  ;
+  s_temp1[tx] = sh_wxgll[J] * rho_invl_times_jacobianl * (dpotentialdxl*xixl  + dpotentialdzl*xizl)  ;
+  s_temp3[tx] = sh_wxgll[I] * rho_invl_times_jacobianl * (dpotentialdxl*gammaxl + dpotentialdzl*gammazl)  ;
 
   __syncthreads();
 
@@ -971,6 +1008,14 @@ Kernel_2_viscoacoustic_impl(const int nb_blocks_to_compute,
 
   d_sum_forces_old[offset_align] = sum_terms;
   sum_terms += forces_attenuation;
+
+  // adds gravity contribution
+  // gravity volume term: 1/kappa grad(chi) . g = - g/kappa partial_z chi
+  // assumes a constant gravity acting only in (negative) z-direction
+  if (gravity) {
+    fac_z = - gravity_const / d_kappastore[offset_align];
+    sum_terms += jacobianl * sh_wxgll[I] * sh_wxgll[J] * fac_z * dpotentialdzl;
+  }
 
   atomicAdd(&d_potential_dot_dot_acoustic[iglob],sum_terms);
 }
@@ -999,12 +1044,14 @@ Kernel_2_viscoacoustic_impl(const int nb_blocks_to_compute,
 template __global__ void Kernel_2_acoustic_impl<1>(const int,const int*,const int*,const int,const int,
                                                    realw_const_p,realw_p,realw_const_p,realw_p,
                                                    const int,const realw*,const realw*,const realw*,const realw*,
-                                                   realw_const_p,realw_const_p,realw_const_p,const realw*,int,int*);
+                                                   realw_const_p,realw_const_p,realw_const_p,const realw*,const realw*,int,int*,
+                                                   const int,const realw);
 
 template __global__ void Kernel_2_acoustic_impl<3>(const int,const int*,const int*,const int,const int,
                                                    realw_const_p,realw_p,realw_const_p,realw_p,
                                                    const int,const realw*,const realw*,const realw*,const realw*,
-                                                   realw_const_p,realw_const_p,realw_const_p,const realw*,int,int*);
+                                                   realw_const_p,realw_const_p,realw_const_p,const realw*,const realw*,int,int*,
+                                                   const int,const realw);
 
 template __global__ void Kernel_2_acoustic_PML_impl<1>(const int,const int*,const int*,const int,const int,
                                                        realw_const_p,realw_p,
@@ -1012,7 +1059,8 @@ template __global__ void Kernel_2_acoustic_PML_impl<1>(const int,const int*,cons
                                                        realw_const_p,realw_const_p,realw_const_p,
                                                        const realw*,int*,int,int,realw,
                                                        realw*,realw*,realw*,realw*,realw*,realw*,realw*,realw*,realw*,
-                                                       realw_p,realw*,realw*,realw*,realw*,realw*);
+                                                       realw_p,realw*,realw*,realw*,realw*,realw*,
+                                                       const int,const realw);
 
 template __global__ void Kernel_2_acoustic_PML_impl<3>(const int,const int*,const int*,const int,const int,
                                                        realw_const_p,realw_p,
@@ -1020,17 +1068,20 @@ template __global__ void Kernel_2_acoustic_PML_impl<3>(const int,const int*,cons
                                                        realw_const_p,realw_const_p,realw_const_p,
                                                        const realw*,int*,int,int,realw,
                                                        realw*,realw*,realw*,realw*,realw*,realw*,realw*,realw*,realw*,
-                                                       realw_p,realw*,realw*,realw*,realw*,realw*);
+                                                       realw_p,realw*,realw*,realw*,realw*,realw*,
+                                                       const int,const realw);
 
 template __global__ void Kernel_2_viscoacoustic_impl<1>(const int,const int*,const int*,const int,const int,
                                                         realw_const_p,realw_p,
                                                         const realw*, const realw*,const realw*,const realw*,
                                                         realw_const_p,realw_const_p,realw_const_p,
-                                                        const realw*,realw_p,const realw*,const realw*,realw_p);
+                                                        const realw*,realw_p,const realw*,const realw*,realw_p,
+                                                        const realw*,const int,const realw);
 
 template __global__ void Kernel_2_viscoacoustic_impl<3>(const int,const int*,const int*,const int,const int,
                                                         realw_const_p,realw_p,
                                                         const realw*, const realw*,const realw*,const realw*,
                                                         realw_const_p,realw_const_p,realw_const_p,
-                                                        const realw*,realw_p,const realw*,const realw*,realw_p);
+                                                        const realw*,realw_p,const realw*,const realw*,realw_p,
+                                                        const realw*,const int,const realw);
 

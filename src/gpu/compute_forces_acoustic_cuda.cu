@@ -96,8 +96,11 @@ TRACE("Kernel_2_acoustic");
                                                                        mp->d_hprimewgll_xx,
                                                                        mp->d_wxgll,
                                                                        d_rhostore,
+                                                                       mp->d_kappastore,
                                                                        mp->pml_boundary_conditions,
-                                                                       mp->d_spec_to_pml);
+                                                                       mp->d_spec_to_pml,
+                                                                       mp->gravity,
+                                                                       mp->gravity_const);
     }else{
       // nb_field == 1
       if (compute_wavefield_1){
@@ -118,8 +121,11 @@ TRACE("Kernel_2_acoustic");
                                                                          mp->d_hprimewgll_xx,
                                                                          mp->d_wxgll,
                                                                          d_rhostore,
+                                                                         mp->d_kappastore,
                                                                          mp->pml_boundary_conditions,
-                                                                         mp->d_spec_to_pml);
+                                                                         mp->d_spec_to_pml,
+                                                                         mp->gravity,
+                                                                         mp->gravity_const);
 
         // PML elements
         if (mp->pml_boundary_conditions){
@@ -154,9 +160,11 @@ TRACE("Kernel_2_acoustic");
                                                                                mp->alphax_store,
                                                                                mp->alphaz_store,
                                                                                mp->betax_store,
-                                                                               mp->betaz_store);
+                                                                               mp->betaz_store,
+                                                                               mp->gravity,
+                                                                               mp->gravity_const);
         } // PML
-      } // compute_wavefield1
+      }
       if (compute_wavefield_2){
         // this run only happens with UNDO_ATTENUATION_AND_OR_PML on
         // adjoint wavefields -> FORWARD_OR_ADJOINT == 3
@@ -176,9 +184,12 @@ TRACE("Kernel_2_acoustic");
                                                                          mp->d_hprimewgll_xx,
                                                                          mp->d_wxgll,
                                                                          d_rhostore,
+                                                                         mp->d_kappastore,
                                                                          mp->pml_boundary_conditions,
-                                                                         mp->d_spec_to_pml);
-      } //compute_wavefield_1
+                                                                         mp->d_spec_to_pml,
+                                                                         mp->gravity,
+                                                                         mp->gravity_const);
+      }
     } //nb_field
   }else{
     // attenuation
@@ -200,7 +211,10 @@ TRACE("Kernel_2_acoustic");
                                                                             mp->d_e1_acous,
                                                                             mp->d_A_newmark_acous,
                                                                             mp->d_B_newmark_acous,
-                                                                            mp->d_sum_forces_old);
+                                                                            mp->d_sum_forces_old,
+                                                                            mp->d_kappastore,
+                                                                            mp->gravity,
+                                                                            mp->gravity_const);
     }
     if (compute_wavefield_2) {
       Kernel_2_viscoacoustic_impl<3><<<grid,threads,0,mp->compute_stream>>>(nb_blocks_to_compute,
@@ -219,7 +233,10 @@ TRACE("Kernel_2_acoustic");
                                                                             mp->d_b_e1_acous,
                                                                             mp->d_A_newmark_acous,
                                                                             mp->d_B_newmark_acous,
-                                                                            mp->d_b_sum_forces_old);
+                                                                            mp->d_b_sum_forces_old,
+                                                                            mp->d_kappastore,
+                                                                            mp->gravity,
+                                                                            mp->gravity_const);
     }
   } // ATTENUATION_VISCOACOUSTIC
 

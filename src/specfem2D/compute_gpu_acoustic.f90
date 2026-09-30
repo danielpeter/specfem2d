@@ -48,6 +48,8 @@
                              b_buffer_send_scalar_gpu,b_buffer_recv_scalar_gpu, &
                              request_send_recv_scalar_gpu,b_request_send_recv_scalar_gpu
 
+  use shared_parameters, only: GRAVITY
+
   implicit none
 
   ! parameter useful only for undo_attenuation (to know which wavefield to compute)
@@ -62,9 +64,11 @@
   call determine_wavefield_flags(compute_b_wavefield,compute_wavefield_1,compute_wavefield_2)
 
   ! free surface
-  if (nelem_acoustic_surface > 0) then
-    !  enforces free surface (zeroes potentials at free surface)
-    call acoustic_enforce_free_surf_cuda(Mesh_pointer,compute_wavefield_1,compute_wavefield_2)
+  if (.not. GRAVITY) then
+    if (nelem_acoustic_surface > 0) then
+      !  enforces free surface (zeroes potentials at free surface)
+      call acoustic_enforce_free_surf_cuda(Mesh_pointer,compute_wavefield_1,compute_wavefield_2)
+    endif
   endif
 
   ! distinguishes two runs: for elements on MPI interfaces, and elements within the partitions
@@ -184,7 +188,9 @@
   call kernel_3_acoustic_cuda(Mesh_pointer,deltatover2,b_deltatover2,compute_wavefield_1,compute_wavefield_2)
 
   ! enforces free surface (zeroes potentials at free surface)
-  call acoustic_enforce_free_surf_cuda(Mesh_pointer,compute_wavefield_1,compute_wavefield_2)
+  if (.not. GRAVITY) then
+    call acoustic_enforce_free_surf_cuda(Mesh_pointer,compute_wavefield_1,compute_wavefield_2)
+  endif
 
   end subroutine compute_forces_viscoacoustic_GPU
 

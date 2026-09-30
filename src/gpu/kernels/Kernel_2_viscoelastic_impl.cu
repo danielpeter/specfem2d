@@ -271,6 +271,35 @@ __device__  __forceinline__ void sum_hprimewgll_gamma(int I, int J,
 
 
 /* ----------------------------------------------------------------------------------------------- */
+// computes dot product between tensor and derivatives
+
+__device__  __forceinline__ void get_dot_product_wgll(realw jacobianl,
+                                                      realw sigma_xx,realw sigma_xz,
+                                                      realw sigma_zx,realw sigma_zz,
+                                                      realw Dxl,realw Dzl,
+                                                      realw* sh_tempx,realw* sh_tempz,
+                                                      realw* sh_wxgll,
+                                                      int idx,
+                                                      int tx,
+                                                      int p_sv){
+
+  // fills shared memory arrays
+  if (threadIdx.x < NGLL2) {
+    if (p_sv){
+      // P_SV case
+      sh_tempx[tx] = sh_wxgll[idx] * jacobianl * (sigma_xx * Dxl + sigma_zx * Dzl); // sh_tempx1
+      sh_tempz[tx] = sh_wxgll[idx] * jacobianl * (sigma_xz * Dxl + sigma_zz * Dzl); // sh_tempz1
+    }else{
+      // SH-case
+      sh_tempx[tx] = sh_wxgll[idx] * jacobianl * (sigma_xx * Dxl + sigma_xz * Dzl); // sh_tempx1
+      sh_tempz[tx] = 0.f;
+    }
+  }
+  __syncthreads();
+}
+
+
+/* ----------------------------------------------------------------------------------------------- */
 
 // KERNEL 2
 //
@@ -313,7 +342,10 @@ Kernel_2_noatt_iso_impl(const int nb_blocks_to_compute,
                         const int simulation_type,
                         const int p_sv,
                         const int PML,
-                        const int* d_spec_to_pml){
+                        const int* d_spec_to_pml,
+                        realw* d_rhostore,
+                        const int gravity,
+                        const realw gravity_const){
 
 // elastic compute kernel without attenuation for isotropic elements
 //
@@ -321,7 +353,7 @@ Kernel_2_noatt_iso_impl(const int nb_blocks_to_compute,
 //  ATTENUATION               = .false.
 //  ANISOTROPY                = .false.
 //  COMPUTE_AND_STORE_STRAIN  = .true. or .false. (true for kernel simulations)
-//  gravity                   = .false.
+//  gravity                   = .true. or .false.
 //  COMPUTE_AND_STORE_STRAIN  = .false.
 
   // block-id == number of local element id in phase_ispec array
@@ -346,7 +378,7 @@ Kernel_2_noatt_iso_impl(const int nb_blocks_to_compute,
   realw duzdxl_plus_duxdzl;
 
   realw lambdal,mul,lambdalplus2mul,kappal;
-  realw sigma_xx,sigma_zz,sigma_xz;
+  realw sigma_xx,sigma_zz,sigma_xz,sigma_zx;
   realw sum_terms1,sum_terms3;
 
   // shared memory
@@ -519,6 +551,7 @@ Kernel_2_noatt_iso_impl(const int nb_blocks_to_compute,
     sigma_xx = lambdalplus2mul*duxdxl + lambdal*duzdzl;
     sigma_zz = lambdalplus2mul*duzdzl + lambdal*duxdxl;
     sigma_xz = mul*duzdxl_plus_duxdzl;
+    sigma_zx = sigma_xz;
   }else{
     // SH-case
     sigma_xx = mul * duxdxl;  // would be sigma_xy in CPU-version
@@ -530,45 +563,28 @@ Kernel_2_noatt_iso_impl(const int nb_blocks_to_compute,
 //
 // + 0 BYTE
 
+  // adds gravity contribution to stress (non-symmetric G-tensor term)
+  // assumes a constant gravity acting only in (negative) z-direction: g = (0,-g)
+  if (gravity && p_sv) {
+    realw rhol_g = d_rhostore[offset] * gravity_const;
+    // G-tensor contribution added: sigma_ij += rho * [ (s.g) delta_ij - s_i g_j ]
+    sigma_xx -= rhol_g * sh_tempz[tx];    // sigma_xx = sigma_xx - rho * g * u_z
+    sigma_xz += rhol_g * sh_tempx[tx];    // sigma_xz = sigma_xz + rho * g * u_x
+  }
+
   // form dot product with test vector, non-symmetric form
   // 1. cut-plane xi
   __syncthreads();
-  if (threadIdx.x < NGLL2) {
-    if (p_sv){
-      // P_SV case
-      sh_tempx[tx] = sh_wxgll[J] *jacobianl * (sigma_xx*xixl + sigma_xz*xizl); // sh_tempx1
-      sh_tempz[tx] = sh_wxgll[J] *jacobianl * (sigma_xz*xixl + sigma_zz*xizl); // sh_tempz1
-    }else{
-      // SH-case
-      sh_tempx[tx] = sh_wxgll[J] *jacobianl * (sigma_xx*xixl + sigma_xz*xizl); // sh_tempx1
-      sh_tempz[tx] = 0.f;
-    }
-  }
-  __syncthreads();
-
-  // 1. cut-plane xi
+  get_dot_product_wgll(jacobianl,sigma_xx,sigma_xz,sigma_zx,sigma_zz,xixl,xizl,sh_tempx,sh_tempz,sh_wxgll,J,tx,p_sv);
   sum_hprimewgll_xi(I,J,&tempx1l,&tempz1l,sh_tempx,sh_tempz,sh_hprimewgll_xx);
-  __syncthreads();
-
-  if (threadIdx.x < NGLL2) {
-    if (p_sv){
-      // P_SV case
-      sh_tempx[tx] = sh_wxgll[I] * jacobianl * (sigma_xx*gammaxl +  sigma_xz*gammazl); // sh_tempx3
-      sh_tempz[tx] = sh_wxgll[I] * jacobianl * (sigma_xz*gammaxl +  sigma_zz*gammazl); // sh_tempz3
-    }else{
-      // SH-case
-      sh_tempx[tx] = sh_wxgll[I] * jacobianl * (sigma_xx*gammaxl +  sigma_xz*gammazl); // sh_tempx3
-      sh_tempz[tx] = 0.f; // sh_tempz3
-    }
-  }
-  __syncthreads();
 
   // 3. cut-plane gamma
-  sum_hprimewgll_gamma(I,J,&tempx3l,&tempz3l,sh_tempx,sh_tempz,sh_hprimewgll_xx);
   __syncthreads();
+  get_dot_product_wgll(jacobianl,sigma_xx,sigma_xz,sigma_zx,sigma_zz,gammaxl,gammazl,sh_tempx,sh_tempz,sh_wxgll,I,tx,p_sv);
+  sum_hprimewgll_gamma(I,J,&tempx3l,&tempz3l,sh_tempx,sh_tempz,sh_hprimewgll_xx);
 
-  sum_terms1= -tempx1l - tempx3l;
-  sum_terms3= -tempz1l - tempz3l;
+  sum_terms1 = - tempx1l - tempx3l;
+  sum_terms3 = - tempz1l - tempz3l;
 
   // assembles acceleration array
   if (threadIdx.x < NGLL2) {
@@ -675,7 +691,9 @@ Kernel_2_noatt_iso_PML_impl(const int nb_blocks_to_compute,
                             realw* alphax_store,
                             realw* alphaz_store,
                             realw* betax_store,
-                            realw* betaz_store){
+                            realw* betaz_store,
+                            const int gravity,
+                            const realw gravity_const){
 
 // elastic compute kernel without attenuation for isotropic elements with PML
 
@@ -1204,45 +1222,30 @@ Kernel_2_noatt_iso_PML_impl(const int nb_blocks_to_compute,
     sigma_xz = mul * duxdzl;  // sigma_zy
   }
 
+  // adds gravity contribution to stress (non-symmetric G-tensor term)
+  // (see compute_forces_viscoelastic.F90 and doc/how_to/README_elastic_gravity.md)
+  // assumes a constant gravity acting only in (negative) z-direction: g = (0,-g)
+  if (gravity && p_sv) {
+    realw rhol_g = d_rhostore[offset] * gravity_const;
+    // G-tensor contribution added: sigma_ij += rho * [ (s.g) delta_ij - s_i g_j ]
+    sigma_xx -= rhol_g * sh_tempz[tx];    // sigma_xx = sigma_xx - rho * g * u_z
+    sigma_xz += rhol_g * sh_tempx[tx];    // sigma_xz = sigma_xz + rho * g * u_x
+    // note: sigma_zx and sigma_zz remain unchanged
+  }
+
   // form dot product with test vector, non-symmetric form
   // 1. cut-plane xi
   __syncthreads();
-  if (threadIdx.x < NGLL2) {
-    if (p_sv){
-      // P_SV case
-      sh_tempx[tx] = sh_wxgll[J] * jacobianl * (sigma_xx * xixl + sigma_zx * xizl); // sh_tempx1
-      sh_tempz[tx] = sh_wxgll[J] * jacobianl * (sigma_xz * xixl + sigma_zz * xizl); // sh_tempz1
-    }else{
-      // SH-case
-      sh_tempx[tx] = sh_wxgll[J] * jacobianl * (sigma_xx * xixl + sigma_xz * xizl); // sh_tempx1
-      sh_tempz[tx] = 0.f;
-    }
-  }
-  __syncthreads();
-
-  // 1. cut-plane xi
+  get_dot_product_wgll(jacobianl,sigma_xx,sigma_xz,sigma_zx,sigma_zz,xixl,xizl,sh_tempx,sh_tempz,sh_wxgll,J,tx,p_sv);
   sum_hprimewgll_xi(I,J,&tempx1l,&tempz1l,sh_tempx,sh_tempz,sh_hprimewgll_xx);
-  __syncthreads();
-
-  if (threadIdx.x < NGLL2) {
-    if (p_sv){
-      // P_SV case
-      sh_tempx[tx] = sh_wxgll[I] * jacobianl * (sigma_xx * gammaxl +  sigma_zx * gammazl); // sh_tempx3
-      sh_tempz[tx] = sh_wxgll[I] * jacobianl * (sigma_xz * gammaxl +  sigma_zz * gammazl); // sh_tempz3
-    }else{
-      // SH-case
-      sh_tempx[tx] = sh_wxgll[I] * jacobianl * (sigma_xx * gammaxl +  sigma_xz * gammazl); // sh_tempx3
-      sh_tempz[tx] = 0.f; // sh_tempz3
-    }
-  }
-  __syncthreads();
 
   // 3. cut-plane gamma
-  sum_hprimewgll_gamma(I,J,&tempx3l,&tempz3l,sh_tempx,sh_tempz,sh_hprimewgll_xx);
   __syncthreads();
+  get_dot_product_wgll(jacobianl,sigma_xx,sigma_xz,sigma_zx,sigma_zz,gammaxl,gammazl,sh_tempx,sh_tempz,sh_wxgll,I,tx,p_sv);
+  sum_hprimewgll_gamma(I,J,&tempx3l,&tempz3l,sh_tempx,sh_tempz,sh_hprimewgll_xx);
 
-  sum_terms1 = -tempx1l - tempx3l;
-  sum_terms3 = -tempz1l - tempz3l;
+  sum_terms1 = - tempx1l - tempx3l;
+  sum_terms3 = - tempz1l - tempz3l;
 
   // assembles acceleration array
   if (threadIdx.x < NGLL2) {
@@ -1285,7 +1288,10 @@ Kernel_2_noatt_ani_impl(int nb_blocks_to_compute,
                         realw* d_c23store,
                         realw* d_c25store,realw* d_c33store,
                         realw* d_c35store,
-                        realw* d_c55store) {
+                        realw* d_c55store,
+                        realw* d_rhostore,
+                        const int gravity,
+                        const realw gravity_const) {
 
 // elastic compute kernel without attenuation for anisotropic elements
 //
@@ -1334,6 +1340,7 @@ Kernel_2_noatt_ani_impl(int nb_blocks_to_compute,
   //       (but could tradeoff with occupancy)
   __shared__ realw sh_hprime_xx[NGLL2];
   __shared__ realw sh_hprimewgll_xx[NGLL2];
+  __shared__ realw sh_wxgll[NGLLX];
 
   // loads hprime's into shared memory
   if (threadIdx.x < NGLL2) {
@@ -1342,6 +1349,7 @@ Kernel_2_noatt_ani_impl(int nb_blocks_to_compute,
     // copy hprime from global memory to shared memory
     load_shared_memory_hprimewgll(&tx,d_hprimewgll_xx,sh_hprimewgll_xx);
   }
+  else if (threadIdx.x < NGLL2 + NGLLX ) load_shared_memory_wxgll(&tx,wxgll,sh_wxgll);
 
   // spectral-element id
   // iphase-1 and working_element-1 for Fortran->C array conventions
@@ -1448,43 +1456,27 @@ Kernel_2_noatt_ani_impl(int nb_blocks_to_compute,
     }
   }
 
+  // adds gravity contribution to stress (non-symmetric G-tensor term)
+  // (see compute_forces_viscoelastic.F90 and doc/how_to/README_elastic_gravity.md)
+  // assumes a constant gravity acting only in (negative) z-direction: g = (0,-g)
+  if (gravity && p_sv) {
+    realw rhol_g = d_rhostore[offset] * gravity_const;
+    // G-tensor contribution added: sigma_ij += rho * [ (s.g) delta_ij - s_i g_j ]
+    sigma_xx -= rhol_g * sh_tempz[tx];    // sigma_xx = sigma_xx - rho * g * u_z
+    sigma_xz += rhol_g * sh_tempx[tx];    // sigma_xz = sigma_xz + rho * g * u_x
+    // note: sigma_zx and sigma_zz remain unchanged
+  }
+
   // form dot product with test vector, non-symmetric form
   // 1. cut-plane xi
   __syncthreads();
-  if (threadIdx.x < NGLL2) {
-    if (p_sv){
-      // P_SV case
-      sh_tempx[tx] = wxgll[J] *jacobianl * (sigma_xx*xixl + sigma_zx*xizl); // sh_tempx1
-      sh_tempz[tx] = wxgll[J] *jacobianl * (sigma_xz*xixl + sigma_zz*xizl); // sh_tempz1
-    }else{
-      // SH-case
-      sh_tempx[tx] = wxgll[J] *jacobianl * (sigma_xx*xixl + sigma_xz*xizl); // sh_tempx1
-      sh_tempz[tx] = 0.f;
-    }
-  }
-  __syncthreads();
-
-  // 1. cut-plane xi
+  get_dot_product_wgll(jacobianl,sigma_xx,sigma_xz,sigma_zx,sigma_zz,xixl,xizl,sh_tempx,sh_tempz,sh_wxgll,J,tx,p_sv);
   sum_hprimewgll_xi(I,J,&tempx1l,&tempz1l,sh_tempx,sh_tempz,sh_hprimewgll_xx);
 
   // 3. cut-plane gamma
   __syncthreads();
-  if (threadIdx.x < NGLL2) {
-    if (p_sv){
-      // P_SV case
-      sh_tempx[tx] = wxgll[I] * jacobianl * (sigma_xx*gammaxl + sigma_zx*gammazl); // sh_tempx3
-      sh_tempz[tx] = wxgll[I] * jacobianl * (sigma_xz*gammaxl + sigma_zz*gammazl); // sh_tempz3
-    }else{
-      // SH-case
-      sh_tempx[tx] = wxgll[I] * jacobianl * (sigma_xx*gammaxl + sigma_xz*gammazl); // sh_tempx3
-      sh_tempz[tx] = 0.f; // sh_tempz3
-    }
-  }
-  __syncthreads();
-
-  // 3. cut-plane gamma
+  get_dot_product_wgll(jacobianl,sigma_xx,sigma_xz,sigma_zx,sigma_zz,gammaxl,gammazl,sh_tempx,sh_tempz,sh_wxgll,I,tx,p_sv);
   sum_hprimewgll_gamma(I,J,&tempx3l,&tempz3l,sh_tempx,sh_tempz,sh_hprimewgll_xx);
-  __syncthreads();
 
   sum_terms1 = - tempx1l - tempx3l;
   sum_terms3 = - tempz1l - tempz3l;
@@ -1531,7 +1523,10 @@ Kernel_2_att_iso_impl(const int nb_blocks_to_compute,
                       realw_const_p A_newmark_mu,realw_const_p B_newmark_mu,
                       realw_const_p A_newmark_kappa,realw_const_p B_newmark_kappa,
                       realw_p e1,realw_p e11,realw_p e13,
-                      realw_p dux_dxl_old,realw_p duz_dzl_old,realw_p dux_dzl_plus_duz_dxl_old){
+                      realw_p dux_dxl_old,realw_p duz_dzl_old,realw_p dux_dzl_plus_duz_dxl_old,
+                      realw* d_rhostore,
+                      const int gravity,
+                      const realw gravity_const){
 
 // elastic compute kernel without attenuation for isotropic elements
 //
@@ -1539,7 +1534,7 @@ Kernel_2_att_iso_impl(const int nb_blocks_to_compute,
 //  ATTENUATION               = .true.
 //  ANISOTROPY                = .false.
 //  COMPUTE_AND_STORE_STRAIN  = .true. or .false. (true for kernel simulations)
-//  gravity                   = .false.
+//  gravity                   = .true. or .false.
 //  COMPUTE_AND_STORE_STRAIN  = .false.
 
   // block-id == number of local element id in phase_ispec array
@@ -1556,7 +1551,7 @@ Kernel_2_att_iso_impl(const int nb_blocks_to_compute,
   realw duxdxl_old,duzdzl_old,duxdzl_plus_duzdxl_old,duxdxl_plus_duzdzl_old;
 
   realw lambdal,mul,lambdalplus2mul,kappal;
-  realw sigma_xx,sigma_zz,sigma_xz;
+  realw sigma_xx,sigma_zz,sigma_xz,sigma_zx;
   realw sum_terms1,sum_terms3;
 
   // attenuation
@@ -1697,10 +1692,20 @@ Kernel_2_att_iso_impl(const int nb_blocks_to_compute,
     sigma_xx += (lambdalplus2mul-mul) * e1_sum + 2.0f * mul * e11_sum;
     sigma_xz += mul * e13_sum;
     sigma_zz += (lambdalplus2mul-mul) * e1_sum - 2.0f * mul * e11_sum;
+    sigma_zx = sigma_xz;
   }else{
     // SH-case
     sigma_xx += 0.f;  // attenuation not implemented yet for SH
     sigma_xz += 0.f;
+  }
+
+  // adds gravity contribution to stress (non-symmetric G-tensor term)
+  // assumes a constant gravity acting only in (negative) z-direction: g = (0,-g)
+  if (gravity && p_sv) {
+    realw rhol_g = d_rhostore[offset] * gravity_const;
+    // G-tensor contribution added: sigma_ij += rho * [ (s.g) delta_ij - s_i g_j ]
+    sigma_xx -= rhol_g * sh_tempz[tx];    // sigma_xx = sigma_xx - rho * g * u_z
+    sigma_xz += rhol_g * sh_tempx[tx];    // sigma_xz = sigma_xz + rho * g * u_x
   }
 
   // saves the grad(displ) to use at the next iteration
@@ -1711,42 +1716,16 @@ Kernel_2_att_iso_impl(const int nb_blocks_to_compute,
   // form dot product with test vector, non-symmetric form
   // 1. cut-plane xi
   __syncthreads();
-  if (threadIdx.x < NGLL2) {
-    if (p_sv){
-      // P_SV case
-      sh_tempx[tx] = sh_wxgll[J] *jacobianl * (sigma_xx*xixl + sigma_xz*xizl); // sh_tempx1
-      sh_tempz[tx] = sh_wxgll[J] *jacobianl * (sigma_xz*xixl + sigma_zz*xizl); // sh_tempz1
-    }else{
-      // SH-case
-      sh_tempx[tx] = sh_wxgll[J] *jacobianl * (sigma_xx*xixl + sigma_xz*xizl); // sh_tempx1
-      sh_tempz[tx] = 0.f;
-    }
-  }
-  __syncthreads();
-
-  // 1. cut-plane xi
+  get_dot_product_wgll(jacobianl,sigma_xx,sigma_xz,sigma_zx,sigma_zz,xixl,xizl,sh_tempx,sh_tempz,sh_wxgll,J,tx,p_sv);
   sum_hprimewgll_xi(I,J,&tempx1l,&tempz1l,sh_tempx,sh_tempz,sh_hprimewgll_xx);
-  __syncthreads();
-
-  if (threadIdx.x < NGLL2) {
-    if (p_sv){
-      // P_SV case
-      sh_tempx[tx] = sh_wxgll[I] * jacobianl * (sigma_xx*gammaxl +  sigma_xz*gammazl); // sh_tempx3
-      sh_tempz[tx] = sh_wxgll[I] * jacobianl * (sigma_xz*gammaxl +  sigma_zz*gammazl); // sh_tempz3
-    }else{
-      // SH-case
-      sh_tempx[tx] = sh_wxgll[I] * jacobianl * (sigma_xx*gammaxl +  sigma_xz*gammazl); // sh_tempx3
-      sh_tempz[tx] = 0.f; // sh_tempz3
-    }
-  }
-  __syncthreads();
 
   // 3. cut-plane gamma
-  sum_hprimewgll_gamma(I,J,&tempx3l,&tempz3l,sh_tempx,sh_tempz,sh_hprimewgll_xx);
   __syncthreads();
+  get_dot_product_wgll(jacobianl,sigma_xx,sigma_xz,sigma_zx,sigma_zz,gammaxl,gammazl,sh_tempx,sh_tempz,sh_wxgll,I,tx,p_sv);
+  sum_hprimewgll_gamma(I,J,&tempx3l,&tempz3l,sh_tempx,sh_tempz,sh_hprimewgll_xx);
 
-  sum_terms1 = -tempx1l - tempx3l;
-  sum_terms3 = -tempz1l - tempz3l;
+  sum_terms1 = - tempx1l - tempx3l;
+  sum_terms3 = - tempz1l - tempz3l;
 
   // assembles acceleration array
   if (threadIdx.x < NGLL2) {
@@ -1789,7 +1768,10 @@ Kernel_2_att_ani_impl(int nb_blocks_to_compute,
                       realw_const_p A_newmark_mu,realw_const_p B_newmark_mu,
                       realw_const_p A_newmark_kappa,realw_const_p B_newmark_kappa,
                       realw_p e1,realw_p e11,realw_p e13,
-                      realw_p dux_dxl_old,realw_p duz_dzl_old,realw_p dux_dzl_plus_duz_dxl_old) {
+                      realw_p dux_dxl_old,realw_p duz_dzl_old,realw_p dux_dzl_plus_duz_dxl_old,
+                      realw* d_rhostore,
+                      const int gravity,
+                      const realw gravity_const) {
 
 // elastic compute kernel without attenuation for anisotropic elements
 //
@@ -1842,6 +1824,7 @@ Kernel_2_att_ani_impl(int nb_blocks_to_compute,
   //       (but could tradeoff with occupancy)
   __shared__ realw sh_hprime_xx[NGLL2];
   __shared__ realw sh_hprimewgll_xx[NGLL2];
+  __shared__ realw sh_wxgll[NGLLX];
 
   // loads hprime's into shared memory
   if (threadIdx.x < NGLL2) {
@@ -1850,6 +1833,7 @@ Kernel_2_att_ani_impl(int nb_blocks_to_compute,
     // copy hprime from global memory to shared memory
     load_shared_memory_hprimewgll(&tx,d_hprimewgll_xx,sh_hprimewgll_xx);
   }
+  else if (threadIdx.x < NGLL2 + NGLLX ) load_shared_memory_wxgll(&tx,wxgll,sh_wxgll);
 
   // spectral-element id
   // iphase-1 and working_element-1 for Fortran->C array conventions
@@ -2008,6 +1992,17 @@ Kernel_2_att_ani_impl(int nb_blocks_to_compute,
     sigma_xz += 0.f;
   }
 
+  // adds gravity contribution to stress (non-symmetric G-tensor term)
+  // (see compute_forces_viscoelastic.F90 and doc/how_to/README_elastic_gravity.md)
+  // assumes a constant gravity acting only in (negative) z-direction: g = (0,-g)
+  if (gravity && p_sv) {
+    realw rhol_g = d_rhostore[offset] * gravity_const;
+    // G-tensor contribution added: sigma_ij += rho * [ (s.g) delta_ij - s_i g_j ]
+    sigma_xx -= rhol_g * sh_tempz[tx];    // sigma_xx = sigma_xx - rho * g * u_z
+    sigma_xz += rhol_g * sh_tempx[tx];    // sigma_xz = sigma_xz + rho * g * u_x
+    // note: sigma_zx and sigma_zz remain unchanged
+  }
+
   // saves the grad(displ) to use at the next iteration
   dux_dxl_old[offset_align] = duxdxl;
   duz_dzl_old[offset_align] = duzdzl;
@@ -2016,40 +2011,13 @@ Kernel_2_att_ani_impl(int nb_blocks_to_compute,
   // form dot product with test vector, non-symmetric form
   // 1. cut-plane xi
   __syncthreads();
-  if (threadIdx.x < NGLL2) {
-    if (p_sv){
-      // P_SV case
-      sh_tempx[tx] = wxgll[J] *jacobianl * (sigma_xx*xixl + sigma_zx*xizl); // sh_tempx1
-      sh_tempz[tx] = wxgll[J] *jacobianl * (sigma_xz*xixl + sigma_zz*xizl); // sh_tempz1
-    }else{
-      // SH-case
-      sh_tempx[tx] = wxgll[J] *jacobianl * (sigma_xx*xixl + sigma_xz*xizl); // sh_tempx1
-      sh_tempz[tx] = 0.f;
-    }
-  }
-  __syncthreads();
-
-  // 1. cut-plane xi
+  get_dot_product_wgll(jacobianl,sigma_xx,sigma_xz,sigma_zx,sigma_zz,xixl,xizl,sh_tempx,sh_tempz,sh_wxgll,J,tx,p_sv);
   sum_hprimewgll_xi(I,J,&tempx1l,&tempz1l,sh_tempx,sh_tempz,sh_hprimewgll_xx);
 
   // 3. cut-plane gamma
   __syncthreads();
-  if (threadIdx.x < NGLL2) {
-    if (p_sv){
-      // P_SV case
-      sh_tempx[tx] = wxgll[I] * jacobianl * (sigma_xx*gammaxl + sigma_zx*gammazl); // sh_tempx3
-      sh_tempz[tx] = wxgll[I] * jacobianl * (sigma_xz*gammaxl + sigma_zz*gammazl); // sh_tempz3
-    }else{
-      // SH-case
-      sh_tempx[tx] = wxgll[I] * jacobianl * (sigma_xx*gammaxl + sigma_xz*gammazl); // sh_tempx3
-      sh_tempz[tx] = 0.f; // sh_tempz3
-    }
-  }
-  __syncthreads();
-
-  // 3. cut-plane gamma
+  get_dot_product_wgll(jacobianl,sigma_xx,sigma_xz,sigma_zx,sigma_zz,gammaxl,gammazl,sh_tempx,sh_tempz,sh_wxgll,I,tx,p_sv);
   sum_hprimewgll_gamma(I,J,&tempx3l,&tempz3l,sh_tempx,sh_tempz,sh_hprimewgll_xx);
-  __syncthreads();
 
   sum_terms1 = - tempx1l - tempx3l;
   sum_terms3 = - tempz1l - tempz3l;
@@ -2088,13 +2056,15 @@ template __global__ void Kernel_2_noatt_iso_impl<1>(const int,const int*,const i
                                                     realw_const_p,realw_p,
                                                     realw*,realw*,realw*,realw*,
                                                     realw_const_p,realw_const_p,realw_const_p,
-                                                    realw*,realw*,const int,const int,const int,const int*);
+                                                    realw*,realw*,const int,const int,const int,const int*,
+                                                    realw*,const int,const realw);
 
 template __global__ void Kernel_2_noatt_iso_impl<3>(const int,const int*,const int*,const int,const int,
                                                     realw_const_p,realw_p,
                                                     realw*,realw*,realw*,realw*,
                                                     realw_const_p,realw_const_p,realw_const_p,
-                                                    realw*,realw*,const int,const int,const int,const int*);
+                                                    realw*,realw*,const int,const int,const int,const int*,
+                                                    realw*,const int,const realw);
 
 // isotropic, no attenuation, w/ PML
 template __global__ void Kernel_2_noatt_iso_PML_impl<1>(const int,const int*,const int*,const int,const int,
@@ -2105,7 +2075,8 @@ template __global__ void Kernel_2_noatt_iso_PML_impl<1>(const int,const int*,con
                                                         realw*,realw*,realw*,realw*,realw*,realw*,realw*,realw*,realw*,realw*,
                                                         realw*,realw*,realw*,realw*,realw*,
                                                         realw_p,const realw*,
-                                                        realw*,realw*,realw*,realw*);
+                                                        realw*,realw*,realw*,realw*,
+                                                        const int,const realw);
 
 template __global__ void Kernel_2_noatt_iso_PML_impl<3>(const int,const int*,const int*,const int,const int,
                                                         realw_const_p,realw_p,
@@ -2115,7 +2086,8 @@ template __global__ void Kernel_2_noatt_iso_PML_impl<3>(const int,const int*,con
                                                         realw*,realw*,realw*,realw*,realw*,realw*,realw*,realw*,realw*,realw*,
                                                         realw*,realw*,realw*,realw*,realw*,
                                                         realw_p,const realw*,
-                                                        realw*,realw*,realw*,realw*);
+                                                        realw*,realw*,realw*,realw*,
+                                                        const int,const realw);
 
 // anisotropic, no attenuation
 template __global__ void Kernel_2_noatt_ani_impl<1>(int,const int*,const int*,const int,const int,
@@ -2123,14 +2095,16 @@ template __global__ void Kernel_2_noatt_ani_impl<1>(int,const int*,const int*,co
                                                     realw*,realw*,realw*,realw*,
                                                     realw_const_p,realw_const_p,realw_const_p,realw_const_p,realw_const_p,
                                                     const int,const int,const int*,
-                                                    realw*,realw*,realw*,realw*,realw*,realw*,realw*,realw*,realw*);
+                                                    realw*,realw*,realw*,realw*,realw*,realw*,realw*,realw*,realw*,
+                                                    realw*,const int,const realw);
 
 template __global__ void Kernel_2_noatt_ani_impl<3>(int,const int*,const int*,const int,const int,
                                                     realw_const_p,realw_p,
                                                     realw*,realw*,realw*,realw*,
                                                     realw_const_p,realw_const_p,realw_const_p,realw_const_p,realw_const_p,
                                                     const int,const int,const int*,
-                                                    realw*,realw*,realw*,realw*,realw*,realw*,realw*,realw*,realw*);
+                                                    realw*,realw*,realw*,realw*,realw*,realw*,realw*,realw*,realw*,
+                                                    realw*,const int,const realw);
 
 // isotropic, w/ attenuation
 template __global__ void Kernel_2_att_iso_impl<1>(const int,const int*,const int*,const int,const int,
@@ -2139,7 +2113,8 @@ template __global__ void Kernel_2_att_iso_impl<1>(const int,const int*,const int
                                                   realw_const_p,realw_const_p,realw_const_p,
                                                   realw*,realw*,const int,const int,
                                                   realw_const_p,realw_const_p,realw_const_p,realw_const_p,
-                                                  realw_p,realw_p,realw_p,realw_p,realw_p,realw_p);
+                                                  realw_p,realw_p,realw_p,realw_p,realw_p,realw_p,
+                                                  realw*,const int,const realw);
 
 template __global__ void Kernel_2_att_iso_impl<3>(const int,const int*,const int*,const int,const int,
                                                   realw_const_p,realw_p,
@@ -2147,7 +2122,8 @@ template __global__ void Kernel_2_att_iso_impl<3>(const int,const int*,const int
                                                   realw_const_p,realw_const_p,realw_const_p,
                                                   realw*,realw*,const int,const int,
                                                   realw_const_p,realw_const_p,realw_const_p,realw_const_p,
-                                                  realw_p,realw_p,realw_p,realw_p,realw_p,realw_p);
+                                                  realw_p,realw_p,realw_p,realw_p,realw_p,realw_p,
+                                                  realw*,const int,const realw);
 
 // anisotropic, w/ attenuation
 template __global__ void Kernel_2_att_ani_impl<1>(int,const int*,const int*,const int,const int,
@@ -2158,7 +2134,8 @@ template __global__ void Kernel_2_att_ani_impl<1>(int,const int*,const int*,cons
                                                   realw*,realw*,realw*,realw*,realw*,realw*,realw*,
                                                   realw*,realw*,
                                                   realw_const_p,realw_const_p,realw_const_p,realw_const_p,
-                                                  realw_p,realw_p,realw_p,realw_p,realw_p,realw_p);
+                                                  realw_p,realw_p,realw_p,realw_p,realw_p,realw_p,
+                                                  realw*,const int,const realw);
 
 template __global__ void Kernel_2_att_ani_impl<3>(int,const int*,const int*,const int,const int,
                                                   realw_const_p,realw_p,
@@ -2168,4 +2145,5 @@ template __global__ void Kernel_2_att_ani_impl<3>(int,const int*,const int*,cons
                                                   realw*,realw*,realw*,realw*,realw*,realw*,realw*,
                                                   realw*,realw*,
                                                   realw_const_p,realw_const_p,realw_const_p,realw_const_p,
-                                                  realw_p,realw_p,realw_p,realw_p,realw_p,realw_p);
+                                                  realw_p,realw_p,realw_p,realw_p,realw_p,realw_p,
+                                                  realw*,const int,const realw);

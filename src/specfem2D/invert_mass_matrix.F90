@@ -62,6 +62,8 @@
   use specfem_par, only: PML_BOUNDARY_CONDITIONS,ispec_is_PML,region_CPML,spec_to_PML, &
                          K_x_store,K_z_store,d_x_store,d_z_store
 
+  use shared_parameters, only: GRAVITY
+
   implicit none
 
   ! local parameter
@@ -529,6 +531,11 @@
   if (STACEY_ABSORBING_CONDITIONS .and. time_stepping_scheme == 1) then
     ! Newmark scheme contribution to mass matrix
     call invert_mass_matrix_init_Stacey()
+  endif
+
+  ! adds acoustic gravity free surface contribution to mass matrix
+  if (any_acoustic .and. GRAVITY) then
+    call prepare_mass_matrix_acoustic_gravity()
   endif
 
   end subroutine invert_mass_matrix_init
@@ -1047,6 +1054,143 @@
   endif ! any_electromagnetic
 
   end subroutine invert_mass_matrix_init_Stacey
+
+!
+!-------------------------------------------------------------------------------------------------
+!
+
+  subroutine prepare_mass_matrix_acoustic_gravity()
+
+! adds the linearized free-surface gravity contribution to the acoustic mass matrix
+
+  use constants, only: IMAIN,CUSTOM_REAL,NGLLX,NGLLZ,ONE,ZERO,TINYVAL
+  use specfem_par, only: myrank,any_acoustic,ibool,nelem_acoustic_surface,acoustic_surface, &
+                         rhostore,jacobian,xix,xiz,gammax,gammaz,wxgll,wzgll, &
+                         rmass_inverse_acoustic,ispec_is_acoustic, &
+                         AXISYM,is_on_the_axis,coord,wxglj,xiglj
+  use shared_parameters, only: GRAVITY,GRAVITY_CONST
+
+  implicit none
+
+  ! local parameters
+  integer :: ispec_acoustic_surface,ispec,ixmin,ixmax,izmin,izmax,i,j,iglob
+  double precision :: gravityl,rhol,weight,M_g
+  real(kind=CUSTOM_REAL) :: xxi,zxi,xgamma,zgamma,jacobian1D,r_xiplus1
+
+  ! checks if anything to do
+  if (.not. any_acoustic) return
+  if (.not. GRAVITY) return
+  if (nelem_acoustic_surface == 0) return
+
+  ! user output
+  if (myrank == 0) then
+    write(IMAIN,*) "  adding acoustic gravity free surface to mass matrix"
+    call flush_IMAIN()
+  endif
+
+  ! check non-zero gravity
+  gravityl = dabs(GRAVITY_CONST)
+  if (gravityl < TINYVAL) then
+    write(IMAIN,*) "  warning: using zero gravity"
+    call flush_IMAIN()
+  endif
+
+  ! loop over acoustic free surface elements
+  do ispec_acoustic_surface = 1, nelem_acoustic_surface
+    ispec = acoustic_surface(1,ispec_acoustic_surface)
+
+    ! acoustic domains only
+    if (.not. ispec_is_acoustic(ispec)) cycle
+
+    ixmin = acoustic_surface(2,ispec_acoustic_surface)
+    ixmax = acoustic_surface(3,ispec_acoustic_surface)
+    izmin = acoustic_surface(4,ispec_acoustic_surface)
+    izmax = acoustic_surface(5,ispec_acoustic_surface)
+
+    ! skip single point nodes
+    if (ixmin == ixmax .and. izmin == izmax) cycle
+
+    ! note: linearized dynamic free surface has a boundary term:
+    !         int_Gamma chi_ddot w / (rho g) dGamma
+    !       which is added as a positive contribution to the acoustic mass matrix:
+    !         M = M_V + M_g
+    !       for GLL nodes on the free surface.
+    !       in a weak form, M_g term is: weight * jacobian1D / (rho g)
+    !
+    ! for details, see: doc/how_to/README_acoustic_gravity_free_surface.md
+
+    if (izmin == izmax) then
+      ! horizontal edge (ITOP or IBOTTOM)
+      j = izmin
+      do i = 1, NGLLX
+        iglob = ibool(i,j,ispec)
+
+        xxi = + gammaz(i,j,ispec) * jacobian(i,j,ispec)
+        zxi = - gammax(i,j,ispec) * jacobian(i,j,ispec)
+        jacobian1D = sqrt(xxi**2 + zxi**2)
+
+        if (AXISYM) then
+          if (is_on_the_axis(ispec)) then
+            if (i == 1) then
+              r_xiplus1 = + gammaz(i,j,ispec) * jacobian(i,j,ispec)
+            else
+              r_xiplus1 = real(coord(1,iglob) / (xiglj(i) + ONE), kind=CUSTOM_REAL)
+            endif
+            weight = dble(jacobian1D * wxglj(i) * r_xiplus1)
+          else
+            weight = dble(jacobian1D * wxgll(i) * coord(1,iglob))
+          endif
+        else
+          weight = dble(jacobian1D * wxgll(i))
+        endif
+
+        rhol = dble(rhostore(i,j,ispec))
+        if (rhol <= 0.d0) call exit_MPI(myrank,'zero density on acoustic free surface')
+
+        ! add M_g term: weight_gll * jacobian1D / (rho g)
+        if (gravityl < TINYVAL) then
+          ! zero gravity
+          M_g = 0.d0
+        else
+          M_g = weight / (rhol * gravityl)
+        endif
+        rmass_inverse_acoustic(iglob) = rmass_inverse_acoustic(iglob) + real(M_g, kind=CUSTOM_REAL)
+      enddo
+
+    else if (ixmin == ixmax) then
+      ! vertical edge (ILEFT or IRIGHT)
+      i = ixmin
+      do j = 1, NGLLZ
+        iglob = ibool(i,j,ispec)
+
+        xgamma = - xiz(i,j,ispec) * jacobian(i,j,ispec)
+        zgamma = + xix(i,j,ispec) * jacobian(i,j,ispec)
+        jacobian1D = sqrt(xgamma**2 + zgamma**2)
+
+        if (AXISYM) then
+          weight = dble(jacobian1D * wzgll(j) * coord(1,iglob))
+        else
+          weight = dble(jacobian1D * wzgll(j))
+        endif
+
+        rhol = dble(rhostore(i,j,ispec))
+        if (rhol <= 0.d0) call exit_MPI(myrank,'zero density on acoustic free surface')
+
+        ! add M_g term: weight_gll * jacobian1D / (rho g)
+        if (gravityl < TINYVAL) then
+          ! zero gravity
+          M_g = 0.d0
+        else
+          M_g = weight / (rhol * gravityl)
+        endif
+        rmass_inverse_acoustic(iglob) = rmass_inverse_acoustic(iglob) + real(M_g, kind=CUSTOM_REAL)
+      enddo
+
+    endif
+
+  enddo
+
+  end subroutine prepare_mass_matrix_acoustic_gravity
 
 !
 !-------------------------------------------------------------------------------------------------

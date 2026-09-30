@@ -68,7 +68,9 @@
                                           Mesh_pointer)
     else
       ! free surface for an acoustic medium
-      call enforce_acoustic_free_surface(b_potential_dot_dot_acoustic,b_potential_dot_acoustic,b_potential_acoustic)
+      if (.not. GRAVITY) then
+        call enforce_acoustic_free_surface(b_potential_dot_dot_acoustic,b_potential_dot_acoustic,b_potential_acoustic)
+      endif
     endif
   endif
 

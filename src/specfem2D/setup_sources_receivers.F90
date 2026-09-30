@@ -87,6 +87,8 @@
                          xigll,zigll,npgeo, NPROC,coorg,knods,NGNOD, &
                          SOURCE_IS_MOVING,NSTEP,DT,t0,tshift_src
 
+  use shared_parameters, only: GRAVITY
+
   implicit none
 
   ! Local variables
@@ -216,7 +218,7 @@
                        iglob_source(i_source),source_type(i_source))
 
     ! checks force source positions for acoustic domains
-    if (source_type(i_source) == 1) then
+    if (source_type(i_source) == 1 .and. .not. GRAVITY) then
       ! only slice which holds source
       if (myrank == islice_selected_source(i_source)) then
         ! checks that acoustic source is not exactly on the free surface because pressure is zero there
@@ -469,12 +471,16 @@
   use specfem_par, only: myrank,ispec_selected_rec,nrecloc,recloc, &
                          xi_receiver,gamma_receiver,seismotypeVec,NSIGTYPE, &
                          nelem_acoustic_surface,acoustic_surface,ispec_is_acoustic
+  use shared_parameters, only: GRAVITY
   implicit none
 
   ! Local variables
   integer :: irec,irecloc
   integer :: ispec,ispec_acoustic_surface
   integer :: ixmin, ixmax, izmin, izmax
+
+  ! check only for non-gravity simulations
+  if (GRAVITY) return
 
   ! check if acoustic receiver is exactly on the free surface because pressure is zero there
   do ispec_acoustic_surface = 1,nelem_acoustic_surface

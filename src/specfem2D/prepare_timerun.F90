@@ -286,6 +286,17 @@
     b_deltatsquareover2 = 0._CUSTOM_REAL
   endif
 
+  ! for gravity
+  if (GRAVITY) then
+    ! user output
+    if (myrank == 0) then
+      write(IMAIN,*) 'Preparing gravity'
+      write(IMAIN,*) '  using gravity constant = ',GRAVITY_CONST
+      write(IMAIN,*)
+      call flush_IMAIN()
+    endif
+  endif
+
   ! synchronizes all processes
   call synchronize_all()
 

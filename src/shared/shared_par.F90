@@ -144,11 +144,11 @@ module shared_input_parameters
   !#
   !#-----------------------------------------------------------------------------
   ! variables used for attenuation
-  logical :: ATTENUATION_VISCOELASTIC = .false.
+  logical :: ATTENUATION_VISCOELASTIC     = .false.
   logical :: ATTENUATION_PORO_FLUID_PART  = .false.
-  logical :: ATTENUATION_VISCOACOUSTIC  = .false.
-  logical :: ATTENUATION_PERMITTIVITY  = .false.
-  logical :: ATTENUATION_CONDUCTIVITY  = .false.
+  logical :: ATTENUATION_VISCOACOUSTIC    = .false.
+  logical :: ATTENUATION_PERMITTIVITY     = .false.
+  logical :: ATTENUATION_CONDUCTIVITY     = .false.
   double precision :: Q0_poroelastic = 9999.d0
   double precision :: freq0_poroelastic = 1.d0
 
@@ -169,7 +169,7 @@ module shared_input_parameters
 
   ! gravity
   logical :: GRAVITY = .false.
-  double precision :: GRAVITY_CONST    = STANDARD_GRAVITY
+  double precision :: GRAVITY_CONST = STANDARD_GRAVITY
 
   !#-----------------------------------------------------------------------------
   !#
@@ -183,9 +183,9 @@ module shared_input_parameters
   ! variables used for plane wave incidence
   logical :: initialfield = .false.
   logical :: add_Bielak_conditions_bottom = .false.
-  logical :: add_Bielak_conditions_right = .false.
-  logical :: add_Bielak_conditions_top = .false.
-  logical :: add_Bielak_conditions_left = .false.
+  logical :: add_Bielak_conditions_right  = .false.
+  logical :: add_Bielak_conditions_top    = .false.
+  logical :: add_Bielak_conditions_left   = .false.
 
   ! acoustic forcing of an acoustic medium at a rigid interface
   logical :: ACOUSTIC_FORCING = .false.

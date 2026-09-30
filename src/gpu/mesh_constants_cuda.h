@@ -403,6 +403,11 @@ typedef struct mesh_ {
   int source_is_moving;
   int p_sv;
 
+  // gravity
+  // note: only a constant gravity is supported, acting in (negative) z-direction
+  int gravity;
+  realw gravity_const;
+
   // ------------------------------------------------------------------ //
   // GLL points & weights
   // ------------------------------------------------------------------ //

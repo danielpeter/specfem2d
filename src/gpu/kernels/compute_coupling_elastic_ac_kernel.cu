@@ -35,28 +35,34 @@
 
 
 __global__ void compute_coupling_elastic_ac_kernel(realw* potential_dot_dot_acoustic,
-                                                    realw* accel,
-                                                    int num_coupling_ac_el_faces,
-                                                    int* coupling_ac_el_ispec,
-                                                    int* coupling_ac_el_ijk,
-                                                    realw* coupling_ac_el_normal,
-                                                    realw* coupling_ac_el_jacobian1Dw,
-                                                    int* d_ibool,
-                                                    int simulation_type,
-                                                    int backward_simulation,
-                                                    const int PML,
-                                                    const int* d_spec_to_pml,
-                                                    const int NSPEC_PML_X,
-                                                    const int NSPEC_PML_Z,
-                                                    const realw deltat,
-                                                    realw_const_p potential_acoustic,
-                                                    realw_const_p potential_dot_acoustic,
-                                                    realw_const_p d_potential_old,
-                                                    realw* d_rmemory_sfb_potential_ddot_acoustic,
-                                                    realw_const_p alphax_store,
-                                                    realw_const_p alphaz_store,
-                                                    realw_const_p betax_store,
-                                                    realw_const_p betaz_store) {
+                                                   realw* accel,
+                                                   int num_coupling_ac_el_faces,
+                                                   int* coupling_ac_el_ispec,
+                                                   int* coupling_ac_el_ijk,
+                                                   realw* coupling_ac_el_normal,
+                                                   realw* coupling_ac_el_jacobian1Dw,
+                                                   int* d_ibool,
+                                                   const realw* d_xiz,
+                                                   const realw* d_gammaz,
+                                                   realw_const_p d_hprime_xx,
+                                                   int simulation_type,
+                                                   int backward_simulation,
+                                                   const int PML,
+                                                   const int gravity,
+                                                   const realw gravity_const,
+                                                   const int* d_spec_to_pml,
+                                                   const int NSPEC_PML_X,
+                                                   const int NSPEC_PML_Z,
+                                                   const realw deltat,
+                                                   realw_const_p potential_acoustic,
+                                                   realw_const_p potential_acoustic_grav,
+                                                   realw_const_p potential_dot_acoustic,
+                                                   realw_const_p d_potential_old,
+                                                   realw* d_rmemory_sfb_potential_ddot_acoustic,
+                                                   realw_const_p alphax_store,
+                                                   realw_const_p alphaz_store,
+                                                   realw_const_p betax_store,
+                                                   realw_const_p betaz_store) {
 
   int igll = threadIdx.x;
   int iface = blockIdx.x + gridDim.x*blockIdx.y;
@@ -65,6 +71,7 @@ __global__ void compute_coupling_elastic_ac_kernel(realw* potential_dot_dot_acou
   realw pressure;
   realw nx,nz;
   realw jacobianw;
+  realw dux_dxi,dux_dgamma,dpotentialdzl;
 
   if (iface < num_coupling_ac_el_faces){
     // gets iglob index
@@ -90,6 +97,39 @@ __global__ void compute_coupling_elastic_ac_kernel(realw* potential_dot_dot_acou
     // uses potential chi such that displacement s = 1/rho grad(chi)
     // pressure p = - kappa ( div( s )) then becomes: p = - dot_dot_chi
     pressure = - potential_dot_dot_acoustic[iglob];
+
+    // gravity: uses potential chi such that displacement s = 1/rho grad(chi),
+    //          pressure becomes: p = - kappa ( div( s ) ) = - dot_dot_chi + grad(chi) * g
+    //
+    // g only acting in negative z-direction, i.e. g = - g z_hat and term: + grad(chi) * g = - g \partial_z \chi
+    //
+    // see compute_coupling_viscoelastic_ac.f90,
+    // for details, see: doc/how_to/README_acoustic_gravity_free_surface.md
+    //
+    // note: skipped for the adjoint fields of SIMULATION_TYPE == 3, where the adjoint definition
+    //       pressure^dagger = potential^dagger applies (as in the CPU implementation),
+    //       and overwritten below for PML edges (the CPU PML overwrite drops the gravity term as well)
+    if (gravity && !(simulation_type == 3 && backward_simulation == 0)){
+      // computes term \partial_z \chi on the acoustic element
+      dux_dxi = 0.f;
+      dux_dgamma = 0.f;
+      for (int l = 0; l < NGLLX; l++){
+        // derivative along xi: dchi/dxi(i,j) = sum_k potential(k,j) * hprime_xx(i,k)
+        dux_dxi += potential_acoustic_grav[d_ibool[INDEX3_PADDED(NGLLX,NGLLX,l,j,ispec)] - 1]
+                   * d_hprime_xx[i + l*NGLLX];
+        // derivative along gamma: dchi/dgamma(i,j) = sum_k potential(i,k) * hprime_zz(j,k)
+        // note: assumes hprime_zz == hprime_xx
+        dux_dgamma += potential_acoustic_grav[d_ibool[INDEX3_PADDED(NGLLX,NGLLX,i,l,ispec)] - 1]
+                      * d_hprime_xx[j + l*NGLLX];
+      }
+      // mapping derivatives on acoustic element
+      int offset = INDEX3_PADDED(NGLLX,NGLLX,i,j,ispec);
+      dpotentialdzl = dux_dxi * d_xiz[offset] + dux_dgamma * d_gammaz[offset];
+
+      // perturbed fluid pressure under gravity: p* = - \kappa \nabla \cdot \mathbf{s} = - \partial_t^2 chi + \nabla chi \cdot g
+      // with g only acting in negative z-direction g = (0, -g): \nabla chi \cdot g = - g \partial_z \chi
+      pressure -= gravity_const * dpotentialdzl;
+    }
 
     if (simulation_type == 3 && backward_simulation == 0){
       // handles adjoint runs coupling between adjoint potential and adjoint elastic wavefield

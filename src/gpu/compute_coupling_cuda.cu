@@ -162,6 +162,7 @@ void FC_FUNC_(compute_coupling_el_ac_cuda,
 
   // sets gpu arrays
   realw* potential_dot_dot;
+  realw* potential_acoustic_grav;
   realw *accel;
   int backward_simulation;
 
@@ -177,11 +178,15 @@ void FC_FUNC_(compute_coupling_el_ac_cuda,
       potential_dot_dot = mp->d_potential_acoustic;
     }
     accel = mp->d_accel;
+    // gravity term needs the gradient of the (forward/adjoint) potential
+    potential_acoustic_grav = mp->d_potential_acoustic;
   } else {
     // for backward/reconstructed fields
     backward_simulation = 1;
     accel = mp->d_b_accel;
     potential_dot_dot = mp->d_b_potential_dot_dot_acoustic;
+    // gravity term needs the gradient of the backward/reconstructed potential
+    potential_acoustic_grav = mp->d_b_potential_acoustic;
   }
 
   // launches GPU kernel
@@ -193,14 +198,20 @@ void FC_FUNC_(compute_coupling_el_ac_cuda,
                                                        mp->d_coupling_ac_el_normal,
                                                        mp->d_coupling_ac_el_jacobian2Dw,
                                                        mp->d_ibool,
+                                                       mp->d_xiz,
+                                                       mp->d_gammaz,
+                                                       mp->d_hprime_xx,
                                                        mp->simulation_type,
                                                        backward_simulation,
                                                        mp->pml_boundary_conditions,
+                                                       mp->gravity,
+                                                       mp->gravity_const,
                                                        mp->d_spec_to_pml,
                                                        mp->nspec_pml_x,
                                                        mp->nspec_pml_z,
                                                        mp->deltat,
                                                        mp->d_potential_acoustic,
+                                                       potential_acoustic_grav,
                                                        mp->d_potential_dot_acoustic,
                                                        mp->d_potential_old,
                                                        mp->d_rmemory_sfb_potential_ddot_acoustic,

@@ -42,6 +42,7 @@
 
   ! local parameters
   real :: free_mb,used_mb,total_mb
+  real(kind=CUSTOM_REAL) :: gravity_const_cr
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: cosrot_irecf, sinrot_irecf
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: rmassx,rmassz
   ! PML
@@ -113,6 +114,9 @@
   ! nrecloc                              : Number of local receivers
   ! nspec_acoustic                       : Number of local acoustic spectral elements
 
+  ! converts constant gravity to working precision (GRAVITY_CONST is double precision)
+  gravity_const_cr = real(GRAVITY_CONST,kind=CUSTOM_REAL)
+
   call prepare_constants_device(Mesh_pointer, &
                                 NGLLX, nspec, nglob, &
                                 xix, xiz, gammax, gammaz, &
@@ -132,6 +136,7 @@
                                 nrecloc, &
                                 cosrot_irecf,sinrot_irecf, &
                                 SIMULATION_TYPE,P_SV, &
+                                GRAVITY,gravity_const_cr, &
                                 nspec_acoustic,nspec_elastic, &
                                 ispec_is_acoustic,ispec_is_elastic, &
                                 myrank,SAVE_FORWARD, &

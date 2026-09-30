@@ -205,28 +205,34 @@ __global__ void compute_coupling_acoustic_el_kernel(realw* displ,
 //
 
 __global__ void compute_coupling_elastic_ac_kernel(realw* potential_dot_dot_acoustic,
-                                                    realw* accel,
-                                                    int num_coupling_ac_el_faces,
-                                                    int* coupling_ac_el_ispec,
-                                                    int* coupling_ac_el_ijk,
-                                                    realw* coupling_ac_el_normal,
-                                                    realw* coupling_ac_el_jacobian1Dw,
-                                                    int* d_ibool,
-                                                    int simulation_type,
-                                                    int backward_simulation,
-                                                    const int PML,
-                                                    const int* d_spec_to_pml,
-                                                    const int NSPEC_PML_X,
-                                                    const int NSPEC_PML_Z,
-                                                    const realw deltat,
-                                                    realw_const_p potential_acoustic,
-                                                    realw_const_p potential_dot_acoustic,
-                                                    realw_const_p d_potential_old,
-                                                    realw* d_rmemory_sfb_potential_ddot_acoustic,
-                                                    realw_const_p alphax_store,
-                                                    realw_const_p alphaz_store,
-                                                    realw_const_p betax_store,
-                                                    realw_const_p betaz_store) ;
+                                                   realw* accel,
+                                                   int num_coupling_ac_el_faces,
+                                                   int* coupling_ac_el_ispec,
+                                                   int* coupling_ac_el_ijk,
+                                                   realw* coupling_ac_el_normal,
+                                                   realw* coupling_ac_el_jacobian1Dw,
+                                                   int* d_ibool,
+                                                   const realw* d_xiz,
+                                                   const realw* d_gammaz,
+                                                   realw_const_p d_hprime_xx,
+                                                   int simulation_type,
+                                                   int backward_simulation,
+                                                   const int PML,
+                                                   const int gravity,
+                                                   const realw gravity_const,
+                                                   const int* d_spec_to_pml,
+                                                   const int NSPEC_PML_X,
+                                                   const int NSPEC_PML_Z,
+                                                   const realw deltat,
+                                                   realw_const_p potential_acoustic,
+                                                   realw_const_p potential_acoustic_grav,
+                                                   realw_const_p potential_dot_acoustic,
+                                                   realw_const_p d_potential_old,
+                                                   realw* d_rmemory_sfb_potential_ddot_acoustic,
+                                                   realw_const_p alphax_store,
+                                                   realw_const_p alphaz_store,
+                                                   realw_const_p betax_store,
+                                                   realw_const_p betaz_store) ;
 
 
 //
@@ -460,8 +466,11 @@ Kernel_2_acoustic_impl(const int nb_blocks_to_compute,
                        realw_const_p d_hprimewgll_xx,
                        realw_const_p d_wxgll,
                        const realw* d_rhostore,
+                       const realw* d_kappastore,
                        int PML,
-                       int* d_spec_to_pml);
+                       int* d_spec_to_pml,
+                       const int gravity,
+                       const realw gravity_const);
 
 template<int FORWARD_OR_ADJOINT> __global__ void
 Kernel_2_acoustic_PML_impl(const int nb_blocks_to_compute,
@@ -495,7 +504,9 @@ Kernel_2_acoustic_PML_impl(const int nb_blocks_to_compute,
                            realw* alphax_store,
                            realw* alphaz_store,
                            realw* betax_store,
-                           realw* betaz_store);
+                           realw* betaz_store,
+                           const int gravity,
+                           const realw gravity_const);
 
 template<int FORWARD_OR_ADJOINT> __global__ void
 Kernel_2_viscoacoustic_impl(const int nb_blocks_to_compute,
@@ -514,7 +525,10 @@ Kernel_2_viscoacoustic_impl(const int nb_blocks_to_compute,
                             realw_p d_e1_acous,
                             const realw* d_A_newmark,
                             const realw* d_B_newmark,
-                            realw_p d_sum_forces_old);
+                            realw_p d_sum_forces_old,
+                            const realw* d_kappastore,
+                            const int gravity,
+                            const realw gravity_const);
 
 
 //
@@ -538,7 +552,10 @@ Kernel_2_noatt_iso_impl(const int nb_blocks_to_compute,
                         const int simulation_type,
                         const int p_sv,
                         const int PML,
-                        const int* d_spec_to_pml);
+                        const int* d_spec_to_pml,
+                        realw* d_rhostore,
+                        const int gravity,
+                        const realw gravity_const);
 
 template<int FORWARD_OR_ADJOINT> __global__ void
 Kernel_2_noatt_iso_PML_impl(const int nb_blocks_to_compute,
@@ -581,7 +598,9 @@ Kernel_2_noatt_iso_PML_impl(const int nb_blocks_to_compute,
                             realw* alphax_store,
                             realw* alphaz_store,
                             realw* betax_store,
-                            realw* betaz_store);
+                            realw* betaz_store,
+                            const int gravity,
+                            const realw gravity_const);
 
 template<int FORWARD_OR_ADJOINT> __global__ void
 Kernel_2_noatt_ani_impl(int nb_blocks_to_compute,
@@ -605,7 +624,10 @@ Kernel_2_noatt_ani_impl(int nb_blocks_to_compute,
                         realw* d_c23store,
                         realw* d_c25store,realw* d_c33store,
                         realw* d_c35store,
-                        realw* d_c55store) ;
+                        realw* d_c55store,
+                        realw* d_rhostore,
+                        const int gravity,
+                        const realw gravity_const) ;
 
 template<int FORWARD_OR_ADJOINT> __global__ void
 Kernel_2_att_iso_impl(const int nb_blocks_to_compute,
@@ -626,7 +648,10 @@ Kernel_2_att_iso_impl(const int nb_blocks_to_compute,
                       realw_const_p A_newmark_mu,realw_const_p B_newmark_mu,
                       realw_const_p A_newmark_kappa,realw_const_p B_newmark_kappa,
                       realw_p e1,realw_p e11,realw_p e13,
-                      realw_p dux_dxl_old,realw_p duz_dzl_old,realw_p dux_dzl_plus_duz_dxl_old);
+                      realw_p dux_dxl_old,realw_p duz_dzl_old,realw_p dux_dzl_plus_duz_dxl_old,
+                      realw* d_rhostore,
+                      const int gravity,
+                      const realw gravity_const);
 
 template<int FORWARD_OR_ADJOINT> __global__ void
 Kernel_2_att_ani_impl(int nb_blocks_to_compute,
@@ -654,7 +679,10 @@ Kernel_2_att_ani_impl(int nb_blocks_to_compute,
                       realw_const_p A_newmark_mu,realw_const_p B_newmark_mu,
                       realw_const_p A_newmark_kappa,realw_const_p B_newmark_kappa,
                       realw_p e1,realw_p e11,realw_p e13,
-                      realw_p dux_dxl_old,realw_p duz_dzl_old,realw_p dux_dzl_plus_duz_dxl_old) ;
+                      realw_p dux_dxl_old,realw_p duz_dzl_old,realw_p dux_dzl_plus_duz_dxl_old,
+                      realw* d_rhostore,
+                      const int gravity,
+                      const realw gravity_const) ;
 
 
 //

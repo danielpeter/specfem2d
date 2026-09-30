@@ -106,6 +106,7 @@ void FC_FUNC_(prepare_constants_device,
                                         realw * h_cosrot,realw * h_sinrot,
                                         int* SIMULATION_TYPE,
                                         int* P_SV,
+                                        int* GRAVITY, realw* GRAVITY_CONST,
                                         int* nspec_acoustic, int* nspec_elastic,
                                         int* ispec_is_acoustic, int* ispec_is_elastic,
                                         int* h_myrank,
@@ -134,6 +135,10 @@ void FC_FUNC_(prepare_constants_device,
   mp->pml_boundary_conditions = *PML_BOUNDARY_CONDITIONS;
   mp->save_forward = *SAVE_FORWARD;
   mp->p_sv = *P_SV;
+
+  // gravity (only constant gravity is supported, acting in negative z-direction)
+  mp->gravity = *GRAVITY;
+  mp->gravity_const = *GRAVITY_CONST;
 
   // safety check
   if (*h_NGLLX != NGLLX) {
