@@ -35,18 +35,135 @@
 !---- locate_source finds the correct position of the (point force/momen-tensor) source
 !----
 
-  subroutine locate_source(ibool,coord,nspec,nglob,xigll,zigll, &
-                           x_source,z_source, &
-                           ispec_selected_source,islice_selected_source, &
-                           NPROC,myrank, &
-                           xi_source,gamma_source,coorg,knods,NGNOD,npgeo, &
-                           iglob_source,source_type)
+  subroutine locate_sources()
 
   use constants, only: NDIM,NGLLX,NGLLZ,IMAIN,HUGEVAL,TINYVAL,NUM_ITER,USE_BEST_LOCATION_FOR_SOURCE, &
     IDOMAIN_ACOUSTIC,IDOMAIN_ELASTIC,IDOMAIN_POROELASTIC,IDOMAIN_ELECTROMAGNETIC
 
-  use specfem_par, only: AXISYM,is_on_the_axis,xiglj, &
-    ispec_is_acoustic,ispec_is_elastic,ispec_is_poroelastic,ispec_is_electromagnetic,SOURCE_IS_MOVING
+  use specfem_par, only: initialfield, &
+                         coord,ibool,nglob,nspec, &
+                         xigll,zigll,npgeo, &
+                         NPROC,myrank,coorg,knods,NGNOD, &
+                         nelem_acoustic_surface,acoustic_surface, &
+                         ispec_is_elastic,ispec_is_poroelastic,ispec_is_electromagnetic, &
+                         GRAVITY
+
+  use specfem_par, only: NSOURCES,source_type, &
+                         x_source,z_source, &
+                         ispec_selected_source,islice_selected_source,iglob_source, &
+                         xi_source,gamma_source
+
+  implicit none
+  ! local parameters
+  integer :: i_source
+  double precision :: x_target,z_target
+  integer :: ispec_acoustic_surface,ispec
+  integer :: ixmin, ixmax, izmin, izmax
+
+  ! user output
+  if (myrank == 0) then
+    write(IMAIN,*) '********************'
+    write(IMAIN,*) ' locating sources'
+    write(IMAIN,*) '********************'
+    write(IMAIN,*)
+    call flush_IMAIN()
+  endif
+
+  ! locates sources
+  do i_source = 1,NSOURCES
+    ! double-checks source type for simulations w/out initialfield
+    if (.not. initialfield) then
+      if (source_type(i_source) /= 1 .and. source_type(i_source) /= 2) then
+        print *,'Error: Source ',i_source,' has invalid source type ',source_type(i_source)
+        print *,'       must be either 1 (force) or 2 (moment tensor)'
+        call exit_MPI(myrank,'incorrect source type')
+      endif
+    endif
+
+    ! target position
+    x_target = x_source(i_source)
+    z_target = z_source(i_source)
+
+    ! gets source positioning
+    ! note: iglob_source is not really needed for moment-tensor sources, but left as argument since it's already allocated
+    !       and might help for future routines...
+    call locate_source(ibool,coord,nspec,nglob,xigll,zigll, &
+                       x_target,z_target, &
+                       ispec_selected_source(i_source),islice_selected_source(i_source), &
+                       NPROC,myrank,xi_source(i_source),gamma_source(i_source),coorg,knods,NGNOD,npgeo, &
+                       iglob_source(i_source),source_type(i_source),i_source)
+
+    ! checks force source positions for acoustic domains
+    if (source_type(i_source) == 1 .and. .not. GRAVITY) then
+      ! only slice which holds source
+      if (myrank == islice_selected_source(i_source)) then
+        ! checks that acoustic source is not exactly on the free surface because pressure is zero there
+        do ispec_acoustic_surface = 1,nelem_acoustic_surface
+          ispec = acoustic_surface(1,ispec_acoustic_surface)
+          ! checks if source element
+          if (ispec == ispec_selected_source(i_source)) then
+            if (.not. ispec_is_elastic(ispec) .and. &
+                .not. ispec_is_poroelastic(ispec) .and. &
+                .not. ispec_is_electromagnetic(ispec)) then
+              ! acoustic element
+              ixmin = acoustic_surface(2,ispec_acoustic_surface)
+              ixmax = acoustic_surface(3,ispec_acoustic_surface)
+              izmin = acoustic_surface(4,ispec_acoustic_surface)
+              izmax = acoustic_surface(5,ispec_acoustic_surface)
+              if ((izmin == 1 .and. izmax == 1 .and. ixmin == 1 .and. ixmax == NGLLX .and. &
+                  gamma_source(i_source) < -0.99d0) .or. &
+                  (izmin == NGLLZ .and. izmax == NGLLZ .and. ixmin == 1 .and. ixmax == NGLLX .and. &
+                  gamma_source(i_source) > 0.99d0) .or. &
+                  (izmin == 1 .and. izmax == NGLLZ .and. ixmin == 1 .and. ixmax == 1 .and. &
+                  xi_source(i_source) < -0.99d0) .or. &
+                  (izmin == 1 .and. izmax == NGLLZ .and. ixmin == NGLLX .and. ixmax == NGLLX .and. &
+                  xi_source(i_source) > 0.99d0) .or. &
+                  (izmin == 1 .and. izmax == 1 .and. ixmin == 1 .and. ixmax == 1 .and. &
+                  gamma_source(i_source) < -0.99d0 .and. xi_source(i_source) < -0.99d0) .or. &
+                  (izmin == 1 .and. izmax == 1 .and. ixmin == NGLLX .and. ixmax == NGLLX .and. &
+                  gamma_source(i_source) < -0.99d0 .and. xi_source(i_source) > 0.99d0) .or. &
+                  (izmin == NGLLZ .and. izmax == NGLLZ .and. ixmin == 1 .and. ixmax == 1 .and. &
+                  gamma_source(i_source) > 0.99d0 .and. xi_source(i_source) < -0.99d0) .or. &
+                  (izmin == NGLLZ .and. izmax == NGLLZ .and. ixmin == NGLLX .and. ixmax == NGLLX .and. &
+                  gamma_source(i_source) > 0.99d0 .and. xi_source(i_source) > 0.99d0)) then
+                call exit_MPI(myrank,'an acoustic source cannot be located exactly '// &
+                              'on the free surface because pressure is zero there')
+              endif
+            endif
+          endif
+        enddo
+      endif
+    endif
+
+  enddo  ! NSOURCES
+
+  ! user output
+  if (myrank == 0) then
+    write(IMAIN,*) 'End of source detection - done'
+    write(IMAIN,*)
+    call flush_IMAIN()
+  endif
+
+  end subroutine locate_sources
+
+!
+!----------------------------------------------------------------------------------
+!
+
+  subroutine locate_source(ibool,coord,nspec,nglob,xigll,zigll, &
+                           x_target,z_target, &
+                           ispec_selected_source,islice_selected_source, &
+                           NPROC,myrank, &
+                           xi_source,gamma_source,coorg,knods,NGNOD,npgeo, &
+                           iglob_source,source_type,i_source)
+
+  use constants, only: NDIM,NGLLX,NGLLZ,IMAIN,HUGEVAL,TINYVAL,NUM_ITER,USE_BEST_LOCATION_FOR_SOURCE, &
+    IDOMAIN_ACOUSTIC,IDOMAIN_ELASTIC,IDOMAIN_POROELASTIC,IDOMAIN_ELECTROMAGNETIC
+
+  use specfem_par, only: ispec_is_acoustic,ispec_is_elastic,ispec_is_poroelastic,ispec_is_electromagnetic, &
+    SOURCE_IS_MOVING
+
+  use specfem_par, only: AXISYM,is_on_the_axis,xiglj
 
   implicit none
 
@@ -61,7 +178,7 @@
   double precision,intent(in) :: xigll(NGLLX)
   double precision,intent(in) :: zigll(NGLLZ)
 
-  double precision,intent(in) :: x_source,z_source
+  double precision,intent(in) :: x_target,z_target
 
   integer,intent(in) :: NGNOD,npgeo
 
@@ -71,58 +188,39 @@
   ! source information
   integer,intent(out) :: ispec_selected_source,islice_selected_source,iglob_source
 
-!! DK DK dec 2017: also loop on all the elements in contact with the initial guess element to improve accuracy of estimate
+  integer,intent(in)  :: NPROC, myrank
+  double precision,intent(out) :: xi_source,gamma_source
+
+  integer,intent(in) :: source_type,i_source
+
+  !also loop on all the elements in contact with the initial guess element to improve accuracy of estimate
   logical, dimension(nglob) :: flag_topological
   integer :: number_of_mesh_elements_for_the_initial_guess
   integer, dimension(:), allocatable :: array_of_all_elements_of_ispec_selected_source
 
-  integer,intent(in)  :: NPROC, myrank
-  double precision,intent(out) :: xi_source,gamma_source
-
-  integer,intent(in) :: source_type
-
   ! local parameters
-  integer :: i,j,ispec,iglob,iter_loop,ix_initial_guess,iz_initial_guess,number_of_iterations
+  integer :: i,j,ispec,iglob
+  integer :: iter_loop,ix_initial_guess,iz_initial_guess,number_of_iterations
+  integer :: ispec_found,islice_found,iglob_found,idomain_found
   integer :: imin,imax,jmin,jmax
-  integer :: idomain
+
   double precision :: dist_squared
   double precision :: xi,gamma,dx,dz,dxi,dgamma
   double precision :: x,z,xix,xiz,gammax,gammaz,jacobian
   double precision :: distmin_squared,dist_glob_squared
   double precision :: final_distance,final_distance_this_element
+  double precision :: xi_found,gamma_found
 
   integer :: is_proc_source
   integer, dimension(1:NPROC)  :: allgather_is_proc_source
   integer, dimension(1)  :: locate_is_proc_source
   logical :: is_force_source
 
-  ! sets source type flag (must be either 1 == force or 2 == moment tensor
-  if (source_type == 1) then
-    is_force_source = .true.
-  else
-    is_force_source = .false.
-  endif
-
-  ! user output
-  if (myrank == 0) then
-    if (is_force_source .and. (.not. SOURCE_IS_MOVING)) then ! TODO
-      write(IMAIN,*) '*******************************'
-      write(IMAIN,*) ' locating force source'
-      write(IMAIN,*) '*******************************'
-      call flush_IMAIN()
-    else if (.not. SOURCE_IS_MOVING) then
-      write(IMAIN,*) '*******************************'
-      write(IMAIN,*) ' locating moment-tensor source'
-      write(IMAIN,*) '*******************************'
-      call flush_IMAIN()
-    endif
-  endif
-
   ! initializes slice and element which hold source
   is_proc_source = 0
-  ispec_selected_source = 0
-  islice_selected_source = 0
-  iglob_source = 0 ! closest global point
+  ispec_found = 0
+  islice_found = 0
+  iglob_found = 0 ! closest global point
 
   ! set distance to huge initial value
   distmin_squared = HUGEVAL
@@ -142,13 +240,13 @@
         iglob = ibool(i,j,ispec)
 
         !  we compare squared distances instead of distances themselves to significantly speed up calculations
-        dist_squared = (x_source-dble(coord(1,iglob)))**2 + (z_source-dble(coord(2,iglob)))**2
+        dist_squared = (x_target - dble(coord(1,iglob)))**2 + (z_target - dble(coord(2,iglob)))**2
 
         ! keep this point if it is closer to the source
         if (dist_squared < distmin_squared) then
-          iglob_source = iglob
+          iglob_found = iglob
           distmin_squared = dist_squared
-          ispec_selected_source = ispec
+          ispec_found = ispec
           ix_initial_guess = i
           iz_initial_guess = j
         endif
@@ -156,19 +254,19 @@
     enddo
   enddo
 
-!! DK DK dec 2017: also loop on all the elements in contact with the initial guess element to improve accuracy of estimate
+  ! also loop on all the elements in contact with the initial guess element to improve accuracy of estimate
   flag_topological(:) = .false.
 
   ! mark the four corners of the initial guess element
-  flag_topological(ibool(1,1,ispec_selected_source)) = .true.
-  flag_topological(ibool(NGLLX,1,ispec_selected_source)) = .true.
-  flag_topological(ibool(NGLLX,NGLLZ,ispec_selected_source)) = .true.
-  flag_topological(ibool(1,NGLLZ,ispec_selected_source)) = .true.
+  flag_topological(ibool(1,1,ispec_found)) = .true.
+  flag_topological(ibool(NGLLX,1,ispec_found)) = .true.
+  flag_topological(ibool(NGLLX,NGLLZ,ispec_found)) = .true.
+  flag_topological(ibool(1,NGLLZ,ispec_found)) = .true.
 
   ! loop on all the elements to count how many are shared with the initial guess
   number_of_mesh_elements_for_the_initial_guess = 1
   do ispec = 1,nspec
-    if (ispec == ispec_selected_source) cycle  ! skip the initial guess element
+    if (ispec == ispec_found) cycle  ! skip the initial guess element
 
     ! loop on the four corners only, no need to loop on the rest since we just want to detect adjacency
     do j = 1,NGLLZ,NGLLZ-1
@@ -187,14 +285,15 @@
 
   ! now that we know the number of adjacent elements, we can allocate the list of elements and create it
   allocate(array_of_all_elements_of_ispec_selected_source(number_of_mesh_elements_for_the_initial_guess))
+  array_of_all_elements_of_ispec_selected_source(:) = 0
 
   ! first store the initial guess itself
   number_of_mesh_elements_for_the_initial_guess = 1
-  array_of_all_elements_of_ispec_selected_source(number_of_mesh_elements_for_the_initial_guess) = ispec_selected_source
+  array_of_all_elements_of_ispec_selected_source(number_of_mesh_elements_for_the_initial_guess) = ispec_found
 
   ! then store all the others
   do ispec = 1,nspec
-    if (ispec == ispec_selected_source) cycle
+    if (ispec == ispec_found) cycle
 
     ! loop on the four corners only, no need to loop on the rest since we just want to detect adjacency
     do j = 1,NGLLZ,NGLLZ-1
@@ -212,13 +311,17 @@
     800 continue
   enddo
 
-!! DK DK dec 2017
+  ! initialize best position found
+  ispec_found = 0
+  xi_found = 0.d0
+  gamma_found = 0.d0
   final_distance = HUGEVAL
+  idomain_found = 0
 
   do i = 1,number_of_mesh_elements_for_the_initial_guess
 
-!! DK DK dec 2017 set initial guess in the middle of the element, since we computed the true one only for the true initial guess
-!! DK DK dec 2017 the nonlinear process below will converge anyway
+    ! set initial guess in the middle of the element, since we computed the true one only for the true initial guess
+    ! the nonlinear process below will converge anyway
     if (i > 1) then
       ix_initial_guess = int(NGLLX / 2.0)
       iz_initial_guess = int(NGLLZ / 2.0)
@@ -256,8 +359,8 @@
                                                  coorg,knods,ispec,NGNOD,nspec,npgeo,.true.)
 
       ! compute distance to target location
-      dx = - (x - x_source)
-      dz = - (z - z_source)
+      dx = - (x - x_target)
+      dz = - (z - z_target)
 
       ! compute increments
       dxi  = xix*dx + xiz*dz
@@ -285,35 +388,33 @@
                                                coorg,knods,ispec,NGNOD,nspec,npgeo,.true.)
 
     ! compute final distance between asked and found
-    final_distance_this_element = sqrt((x_source-x)**2 + (z_source-z)**2)
+    final_distance_this_element = sqrt((x_target - x)**2 + (z_target - z)**2)
 
     ! if we have found an element that gives a shorter distance
     if (final_distance_this_element < final_distance) then
-      !   store element number found
-      ispec_selected_source = ispec
+      ! store element number found
+      ispec_found = ispec
 
-      !   store xi,gamma of point found
-      xi_source = xi
-      gamma_source = gamma
+      ! store xi,gamma of point found
+      xi_found = xi
+      gamma_found = gamma
 
-      !   store final distance between asked and found
+      ! store final distance between asked and found
       final_distance = final_distance_this_element
 
       ! determines domain for outputting element type
       if (ispec_is_acoustic(ispec)) then
-        idomain = IDOMAIN_ACOUSTIC
+        idomain_found = IDOMAIN_ACOUSTIC
       else if (ispec_is_elastic(ispec)) then
-        idomain = IDOMAIN_ELASTIC
+        idomain_found = IDOMAIN_ELASTIC
       else if (ispec_is_poroelastic(ispec)) then
-        idomain = IDOMAIN_POROELASTIC
+        idomain_found = IDOMAIN_POROELASTIC
       else if (ispec_is_electromagnetic(ispec)) then
-        idomain = IDOMAIN_ELECTROMAGNETIC
+        idomain_found = IDOMAIN_ELECTROMAGNETIC
       else
         call stop_the_code('Invalid element type in locating source found!')
       endif
     endif
-
-!! DK DK dec 2017
   enddo
 
   ! global minimum distance computed over all processes
@@ -328,68 +429,82 @@
   if (myrank == 0) then
     ! select slice with maximum rank which contains source
     locate_is_proc_source = maxloc(allgather_is_proc_source) - 1
-    islice_selected_source = locate_is_proc_source(1)
+    islice_found = locate_is_proc_source(1)
   endif
 
   ! selects slice which holds source
-  call bcast_all_singlei(islice_selected_source)
+  call bcast_all_singlei(islice_found)
 
 #ifdef WITH_MPI
   ! for MPI version, gather information from all the nodes
-  if (islice_selected_source /= 0) then
+  if (islice_found /= 0) then
     ! source is in another slice than the main process
-    if (myrank == islice_selected_source) then
+    if (myrank == islice_found) then
       ! send information from process holding source
-      call send_singlei(ispec_selected_source,0,0)
-      call send_singlei(idomain,0,1)
-      call send_singledp(xi_source,0,2)
-      call send_singledp(gamma_source,0,3)
+      call send_singlei(ispec_found,0,0)
+      call send_singlei(idomain_found,0,1)
+      call send_singledp(xi_found,0,2)
+      call send_singledp(gamma_found,0,3)
       call send_singledp(final_distance,0,4)
+      call send_singlei(iglob_found,0,5)
     else if (myrank == 0) then
       ! main collects
-      call recv_singlei(ispec_selected_source,islice_selected_source,0)
-      call recv_singlei(idomain,islice_selected_source,1)
-      call recv_singledp(xi_source,islice_selected_source,2)
-      call recv_singledp(gamma_source,islice_selected_source,3)
-      call recv_singledp(final_distance,islice_selected_source,4)
+      call recv_singlei(ispec_found,islice_found,0)
+      call recv_singlei(idomain_found,islice_found,1)
+      call recv_singledp(xi_found,islice_found,2)
+      call recv_singledp(gamma_found,islice_found,3)
+      call recv_singledp(final_distance,islice_found,4)
+      call recv_singlei(iglob_found,islice_found,5)
     endif
   endif
 #endif
 
+  ! store found position
+  ! note: iglob_source is not really needed for moment-tensor sources, but left as argument since it's already allocated
+  !       and might help for future routines...
+  islice_selected_source = islice_found
+  ispec_selected_source = ispec_found
+  iglob_source = iglob_found
+  xi_source = xi_found
+  gamma_source = gamma_found
+
+  ! sets source type flag (must be either 1 == force or 2 == moment tensor
+  if (source_type == 1) then
+    is_force_source = .true.
+  else
+    is_force_source = .false.
+  endif
+
   ! user output
   if (myrank == 0) then
     if ((.not. is_force_source) .or. (is_force_source .and. (.not. SOURCE_IS_MOVING))) then
+      ! source info
+      write(IMAIN,*) 'Source # ',i_source
+      write(IMAIN,*) '  source located in slice ',islice_selected_source
+      write(IMAIN,*) '                 in element ',ispec_selected_source
+      if (idomain_found == IDOMAIN_ACOUSTIC) then
+        write(IMAIN,*) '                 in acoustic domain'
+      else if (idomain_found == IDOMAIN_ELASTIC) then
+        write(IMAIN,*) '                 in elastic domain'
+      else if (idomain_found == IDOMAIN_POROELASTIC) then
+        write(IMAIN,*) '                 in poroelastic domain'
+      else if (idomain_found == IDOMAIN_ELECTROMAGNETIC) then
+        write(IMAIN,*) '                 in electromagnetic domain'
+      else
+        write(IMAIN,*) '                 in unknown domain'
+      endif
       write(IMAIN,*)
       if (is_force_source) then
-        write(IMAIN,*) 'Force source:'
+        write(IMAIN,*) '  using force point source:'
       else
-        write(IMAIN,*) 'Moment-tensor source:'
+        write(IMAIN,*) '  using moment-tensor source:'
       endif
-      write(IMAIN,*) '            original x: ',sngl(x_source)
-      write(IMAIN,*) '            original z: ',sngl(z_source)
-      write(IMAIN,*) 'Closest estimate found: ',sngl(final_distance),' m away'
-      write(IMAIN,*) ' in rank ',islice_selected_source
-      write(IMAIN,*) ' in element ',ispec_selected_source
-      if (idomain == IDOMAIN_ACOUSTIC) then
-        write(IMAIN,*) ' in acoustic domain'
-      else if (idomain == IDOMAIN_ELASTIC) then
-        write(IMAIN,*) ' in elastic domain'
-      else if (idomain == IDOMAIN_POROELASTIC) then
-        write(IMAIN,*) ' in poroelastic domain'
-      else if (idomain == IDOMAIN_ELECTROMAGNETIC) then
-        write(IMAIN,*) ' in electromagnetic domain'
-      else
-        write(IMAIN,*) ' in unknown domain'
-      endif
-      write(IMAIN,*) ' at xi,gamma coordinates = ',xi_source,gamma_source
+      write(IMAIN,*) '    xi coordinate of source in that element   :',xi_source
+      write(IMAIN,*) '    gamma coordinate of source in that element:',gamma_source
       write(IMAIN,*)
-
-      write(IMAIN,*)
-      if (is_force_source) then
-        write(IMAIN,*) 'end of force source detection'
-      else
-        write(IMAIN,*) 'end of moment-tensor source detection'
-      endif
+      write(IMAIN,*) '    original x            : ',sngl(x_target)
+      write(IMAIN,*) '    original z            : ',sngl(z_target)
+      write(IMAIN,*) '    closest estimate found: ',sngl(final_distance),' m away'
       write(IMAIN,*)
       call flush_IMAIN()
     endif
@@ -398,7 +513,7 @@
     if (final_distance == HUGEVAL) call exit_MPI(myrank,'Error locating source')
   endif
 
-!! DK DK dec 2017: also loop on all the elements in contact with the initial guess element to improve accuracy of estimate
+  ! free temporary array
   deallocate(array_of_all_elements_of_ispec_selected_source)
 
   end subroutine locate_source

@@ -409,7 +409,7 @@
 
   ! user output
   if (myrank == 0) then
-    write(IMAIN,*) '  saving the source time function in a text file...'
+    write(IMAIN,*) '  printing the source time function'
     write(IMAIN,*)
     call flush_IMAIN()
   endif

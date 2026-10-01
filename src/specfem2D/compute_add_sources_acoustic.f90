@@ -181,7 +181,7 @@
                          xsrc,zsrc, &
                          ispec_selected_source(i_source),islice_selected_source(i_source), &
                          NPROC,myrank,xi_source(i_source),gamma_source(i_source),coorg,knods,NGNOD,npgeo, &
-                         iglob_source(i_source),source_type(i_source))
+                         iglob_source(i_source),source_type(i_source),i_source)
 
       ! print *,ispec_selected_source(i_source) > nspec, "xmin:", &
       !               coord(1,ibool(1,1,ispec_selected_source(i_source))), &

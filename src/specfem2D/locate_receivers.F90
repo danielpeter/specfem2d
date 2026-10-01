@@ -135,7 +135,7 @@
     write(IMAIN,*) ' locating receivers'
     write(IMAIN,*) '********************'
     write(IMAIN,*)
-    write(IMAIN,*) 'reading receiver information from the '//trim(stations_filename)//' file'
+    write(IMAIN,*) 'reading receiver information from ',trim(stations_filename),' file'
     write(IMAIN,*)
     call flush_IMAIN()
   endif
@@ -478,22 +478,25 @@
       if (show_station_output) then
         write(IMAIN,*)
         write(IMAIN,*) 'Station # ',irec,'    ',network_name(irec),station_name(irec)
-        write(IMAIN,*) '            original x: ',sngl(st_xval(irec))
-        write(IMAIN,*) '            original z: ',sngl(st_zval(irec))
-        write(IMAIN,*) 'Closest estimate found: ',sngl(final_distance_this_element),' m away'
-        write(IMAIN,*) ' in rank ', rank_selected
-        write(IMAIN,*) ' in element ',ispec
+        write(IMAIN,*) '     original x            : ',sngl(st_xval(irec))
+        write(IMAIN,*) '     original z            : ',sngl(st_zval(irec))
+        write(IMAIN,*) '     distance from source  : ',sngl(distance_receiver(irec)),' m'
+        write(IMAIN,*) '     closest estimate found: ',sngl(final_distance_this_element),' m away'
+        write(IMAIN,*)
+        write(IMAIN,*) '     receiver located in slice ', rank_selected
+        write(IMAIN,*) '                      in element ',ispec
         if (idomain == IDOMAIN_ACOUSTIC) then
-          write(IMAIN,*) ' in acoustic domain'
+          write(IMAIN,*) '                      in acoustic domain'
         else if (idomain == IDOMAIN_ELASTIC) then
-          write(IMAIN,*) ' in elastic domain'
+          write(IMAIN,*) '                      in elastic domain'
         else if (idomain == IDOMAIN_POROELASTIC) then
-          write(IMAIN,*) ' in poroelastic domain'
+          write(IMAIN,*) '                      in poroelastic domain'
         else
-          write(IMAIN,*) ' in unknown domain'
+          write(IMAIN,*) '                      in unknown domain'
         endif
-        write(IMAIN,*) ' at xi,gamma coordinates = ',xi,gamma
-        write(IMAIN,*) 'Distance from source: ',sngl(distance_receiver(irec)),' m'
+        write(IMAIN,*) '     at coordinates:'
+        write(IMAIN,*) '       xi    = ',xi
+        write(IMAIN,*) '       gamma = ',gamma
         write(IMAIN,*)
         call flush_IMAIN()
       endif
@@ -523,7 +526,7 @@
     endif
 
     write(IMAIN,*)
-    write(IMAIN,*) 'end of receiver detection'
+    write(IMAIN,*) 'End of receiver detection'
     write(IMAIN,*)
     call flush_IMAIN()
   endif

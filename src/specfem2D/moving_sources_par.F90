@@ -572,6 +572,8 @@ end subroutine init_moving_sources_GPU
    !---- all the elements of the mesh too often
    !----
 
+  implicit none
+
   ! Inputs
   double precision, intent(in) :: x_source, z_source
   integer, intent(in)  :: NPROC, myrank

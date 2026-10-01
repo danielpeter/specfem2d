@@ -78,22 +78,14 @@
 #endif
      MAX_STRING_LEN
 
-  use specfem_par, only: NSOURCES,initialfield,source_type, &
-                         coord,ibool,nglob,nspec,nelem_acoustic_surface,acoustic_surface, &
-                         ispec_is_elastic,ispec_is_poroelastic,ispec_is_electromagnetic, &
-                         x_source,z_source,vx_source,vz_source,ispec_selected_source, &
+  use specfem_par, only: NSOURCES,x_source,z_source,vx_source,vz_source,&
                          xi_source,gamma_source, &
-                         islice_selected_source,iglob_source, &
-                         xigll,zigll,npgeo, NPROC,coorg,knods,NGNOD, &
-                         SOURCE_IS_MOVING,NSTEP,DT,t0,tshift_src
-
-  use shared_parameters, only: GRAVITY
+                         islice_selected_source,ispec_selected_source,iglob_source, &
+                         SOURCE_IS_MOVING,NSTEP,DT,t0,tshift_src,coord
 
   implicit none
 
   ! Local variables
-  integer :: ispec_acoustic_surface
-  integer :: ixmin, ixmax, izmin, izmax,i_source,ispec
   ! dimensions
   double precision :: xmin,xmax,zmin,zmax
   double precision :: xmin_local,xmax_local,zmin_local,zmax_local
@@ -190,76 +182,11 @@
   islice_selected_source(:) = 0
   ispec_selected_source(:) = 0
   iglob_source(:) = 0
+  xi_source(:) = 0.d0
+  gamma_source(:) = 0.d0
 
   ! locates sources
-  do i_source = 1,NSOURCES
-    ! user output
-    if (myrank == 0) then
-      write(IMAIN,*) 'Source: ',i_source
-      call flush_IMAIN()
-    endif
-
-    ! double-checks source type for simulations w/out initialfield
-    if (.not. initialfield) then
-      if (source_type(i_source) /= 1 .and. source_type(i_source) /= 2) then
-        print *,'Error: source has invalid source type ',source_type(i_source)
-        print *,'       must be either 1 (force) or 2 (moment tensor)'
-        call exit_MPI(myrank,'incorrect source type')
-      endif
-    endif
-
-    ! gets source positioning
-    ! note: iglob_source is not really needed for moment-tensor sources, but left as argument since it's already allocated
-    !       and might help for future routines...
-    call locate_source(ibool,coord,nspec,nglob,xigll,zigll, &
-                       x_source(i_source),z_source(i_source), &
-                       ispec_selected_source(i_source),islice_selected_source(i_source), &
-                       NPROC,myrank,xi_source(i_source),gamma_source(i_source),coorg,knods,NGNOD,npgeo, &
-                       iglob_source(i_source),source_type(i_source))
-
-    ! checks force source positions for acoustic domains
-    if (source_type(i_source) == 1 .and. .not. GRAVITY) then
-      ! only slice which holds source
-      if (myrank == islice_selected_source(i_source)) then
-        ! checks that acoustic source is not exactly on the free surface because pressure is zero there
-        do ispec_acoustic_surface = 1,nelem_acoustic_surface
-          ispec = acoustic_surface(1,ispec_acoustic_surface)
-          ! checks if source element
-          if (ispec == ispec_selected_source(i_source)) then
-            if (.not. ispec_is_elastic(ispec) .and. &
-                .not. ispec_is_poroelastic(ispec) .and. &
-                .not. ispec_is_electromagnetic(ispec)) then
-              ! acoustic element
-              ixmin = acoustic_surface(2,ispec_acoustic_surface)
-              ixmax = acoustic_surface(3,ispec_acoustic_surface)
-              izmin = acoustic_surface(4,ispec_acoustic_surface)
-              izmax = acoustic_surface(5,ispec_acoustic_surface)
-              if ((izmin == 1 .and. izmax == 1 .and. ixmin == 1 .and. ixmax == NGLLX .and. &
-                  gamma_source(i_source) < -0.99d0) .or. &
-                  (izmin == NGLLZ .and. izmax == NGLLZ .and. ixmin == 1 .and. ixmax == NGLLX .and. &
-                  gamma_source(i_source) > 0.99d0) .or. &
-                  (izmin == 1 .and. izmax == NGLLZ .and. ixmin == 1 .and. ixmax == 1 .and. &
-                  xi_source(i_source) < -0.99d0) .or. &
-                  (izmin == 1 .and. izmax == NGLLZ .and. ixmin == NGLLX .and. ixmax == NGLLX .and. &
-                  xi_source(i_source) > 0.99d0) .or. &
-                  (izmin == 1 .and. izmax == 1 .and. ixmin == 1 .and. ixmax == 1 .and. &
-                  gamma_source(i_source) < -0.99d0 .and. xi_source(i_source) < -0.99d0) .or. &
-                  (izmin == 1 .and. izmax == 1 .and. ixmin == NGLLX .and. ixmax == NGLLX .and. &
-                  gamma_source(i_source) < -0.99d0 .and. xi_source(i_source) > 0.99d0) .or. &
-                  (izmin == NGLLZ .and. izmax == NGLLZ .and. ixmin == 1 .and. ixmax == 1 .and. &
-                  gamma_source(i_source) > 0.99d0 .and. xi_source(i_source) < -0.99d0) .or. &
-                  (izmin == NGLLZ .and. izmax == NGLLZ .and. ixmin == NGLLX .and. ixmax == NGLLX .and. &
-                  gamma_source(i_source) > 0.99d0 .and. xi_source(i_source) > 0.99d0)) then
-                call exit_MPI(myrank,'an acoustic source cannot be located exactly '// &
-                              'on the free surface because pressure is zero there')
-              endif
-            endif
-          endif
-        enddo
-      endif
-    endif
-
-  enddo ! do i_source= 1,NSOURCES
+  call locate_sources()
 
 !! DK DK this below not supported in the case of MPI yet, we should do a MPI_GATHER() of the values
 !! DK DK and use "if (myrank == islice_selected_rec(irec)) then" to display the right sources
@@ -366,7 +293,7 @@
 
   if (myrank == 0) then
     write(IMAIN,*)
-    write(IMAIN,*) 'Total number of receivers = ',nrec
+    write(IMAIN,*) '  Total number of receivers = ',nrec
     write(IMAIN,*)
     call flush_IMAIN()
   endif
