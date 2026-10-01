@@ -206,7 +206,12 @@
     enddo
 
     ! first double loop over GLL points to compute and store gradients
-    call mxm_4comp_singleA(dux_dxi,duz_dxi,dux_dgamma,duz_dgamma,dummy_loc,hprime_xx,hprime_zz)
+    select case(NGLLX)
+    case (5)
+      call mxm5_4comp_singleA(dux_dxi,duz_dxi,dux_dgamma,duz_dgamma,dummy_loc,hprime_xx,hprime_zz)
+    case default
+      call mxm_4comp_singleA(dux_dxi,duz_dxi,dux_dgamma,duz_dgamma,dummy_loc,hprime_xx,hprime_zz)
+    end select
 
     ! AXISYM case overwrites dux_dxi and duz_dxi
     if (AXISYM) then
@@ -828,6 +833,14 @@
 
   subroutine mxm_4comp_singleA(x1,x2,z1,z2,A,B,C)
 
+! we can force inlining (Intel compiler)
+#if defined __INTEL_COMPILER
+!DIR$ ATTRIBUTES FORCEINLINE :: mxm_4comp_singleA
+#else
+! cray
+!DIR$ INLINEALWAYS mxm_4comp_singleA
+#endif
+
 ! matrix x matrix multiplication, merging 4 loops for x1,x2 = A^t B^t and z1,z2 = A C^t
 !
 ! index notation:
@@ -868,38 +881,85 @@
   ! local parameters
   integer :: i,j,k
 
-  select case(NGLLX)
-  case (5)
-    do j = 1,5
-      do i = 1,5
-        ! loop unrolling
-        x1(i,j) = A(1,1,j) * B(i,1) + A(1,2,j) * B(i,2) + A(1,3,j) * B(i,3) + A(1,4,j) * B(i,4) + A(1,5,j) * B(i,5)
-        x2(i,j) = A(2,1,j) * B(i,1) + A(2,2,j) * B(i,2) + A(2,3,j) * B(i,3) + A(2,4,j) * B(i,4) + A(2,5,j) * B(i,5)
+  do j = 1,NGLLZ
+!DIR$ IVDEP
+#if defined __INTEL_COMPILER
+!DIR$ SIMD
+#endif
+    do i = 1,NGLLX
+      x1(i,j) = 0._CUSTOM_REAL
+      x2(i,j) = 0._CUSTOM_REAL
+      z1(i,j) = 0._CUSTOM_REAL
+      z2(i,j) = 0._CUSTOM_REAL
+      do k = 1,NGLLX
+        x1(i,j) = x1(i,j) + A(1,k,j) * B(i,k)
+        x2(i,j) = x2(i,j) + A(2,k,j) * B(i,k)
 
-        z1(i,j) = A(1,i,1) * C(j,1) + A(1,i,2) * C(j,2) + A(1,i,3) * C(j,3) + A(1,i,4) * C(j,4) + A(1,i,5) * C(j,5)
-        z2(i,j) = A(2,i,1) * C(j,1) + A(2,i,2) * C(j,2) + A(2,i,3) * C(j,3) + A(2,i,4) * C(j,4) + A(2,i,5) * C(j,5)
+        z1(i,j) = z1(i,j) + A(1,i,k) * C(j,k)
+        z2(i,j) = z2(i,j) + A(2,i,k) * C(j,k)
       enddo
     enddo
-
-  case default
-    do j = 1,NGLLZ
-      do i = 1,NGLLX
-        x1(i,j) = 0._CUSTOM_REAL
-        x2(i,j) = 0._CUSTOM_REAL
-        z1(i,j) = 0._CUSTOM_REAL
-        z2(i,j) = 0._CUSTOM_REAL
-        do k = 1,NGLLX
-          x1(i,j) = x1(i,j) + A(1,k,j) * B(i,k)
-          x2(i,j) = x2(i,j) + A(2,k,j) * B(i,k)
-
-          z1(i,j) = z1(i,j) + A(1,i,k) * C(j,k)
-          z2(i,j) = z2(i,j) + A(2,i,k) * C(j,k)
-        enddo
-      enddo
-    enddo
-  end select
+  enddo
 
   end subroutine mxm_4comp_singleA
+
+!---------------------------------------------------------------------------------------
+
+  subroutine mxm5_4comp_singleA(x1,x2,z1,z2,A,B,C)
+
+! we can force inlining (Intel compiler)
+#if defined __INTEL_COMPILER
+!DIR$ ATTRIBUTES FORCEINLINE :: mxm5_4comp_singleA
+#else
+! cray
+!DIR$ INLINEALWAYS mxm5_4comp_singleA
+#endif
+
+! matrix x matrix multiplication for NGLLX == NGLLZ == 5
+
+  use constants, only: NDIM,CUSTOM_REAL
+
+  implicit none
+
+  real(kind=CUSTOM_REAL), dimension(5,5),intent(out) :: x1,x2,z1,z2
+  real(kind=CUSTOM_REAL), dimension(NDIM,5,5),intent(in) :: A
+  real(kind=CUSTOM_REAL), dimension(5,5),intent(in) :: B,C
+
+  ! local parameters
+  integer :: i,j
+
+  do j = 1,5
+!DIR$ IVDEP
+#if defined __INTEL_COMPILER
+!DIR$ SIMD
+#endif
+    do i = 1,5
+      ! loop unrolling
+      x1(i,j) = A(1,1,j) * B(i,1) &
+              + A(1,2,j) * B(i,2) &
+              + A(1,3,j) * B(i,3) &
+              + A(1,4,j) * B(i,4) &
+              + A(1,5,j) * B(i,5)
+      x2(i,j) = A(2,1,j) * B(i,1) &
+              + A(2,2,j) * B(i,2) &
+              + A(2,3,j) * B(i,3) &
+              + A(2,4,j) * B(i,4) &
+              + A(2,5,j) * B(i,5)
+
+      z1(i,j) = A(1,i,1) * C(j,1) &
+              + A(1,i,2) * C(j,2) &
+              + A(1,i,3) * C(j,3) &
+              + A(1,i,4) * C(j,4) &
+              + A(1,i,5) * C(j,5)
+      z2(i,j) = A(2,i,1) * C(j,1) &
+              + A(2,i,2) * C(j,2) &
+              + A(2,i,3) * C(j,3) &
+              + A(2,i,4) * C(j,4) &
+              + A(2,i,5) * C(j,5)
+    enddo
+  enddo
+
+  end subroutine mxm5_4comp_singleA
 
   end subroutine compute_forces_viscoelastic
 
