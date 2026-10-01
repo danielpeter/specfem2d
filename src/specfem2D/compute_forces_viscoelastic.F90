@@ -101,10 +101,14 @@
 
   real(kind=CUSTOM_REAL), dimension(NDIM,NGLLX,NGLLZ) :: dummy_loc
   real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLZ) :: tempx1,tempx2,tempz1,tempz2
+  real(kind=CUSTOM_REAL), dimension(NDIM,NGLLX,NGLLZ) :: sum_terms
+
+  ! axisym
   real(kind=CUSTOM_REAL), dimension(NGLJ,NGLLZ) :: tempx3
   real(kind=CUSTOM_REAL), dimension(NGLJ,NGLLZ) :: sigma_thetatheta
   real(kind=CUSTOM_REAL), dimension(NGLJ,NGLLZ) :: r_xiplus1
 
+  real(kind=CUSTOM_REAL) :: fac1,fac2
   real(kind=CUSTOM_REAL) :: tempx1l,tempx2l,tempz1l,tempz2l
   real(kind=CUSTOM_REAL) :: theta,ct,st
   real(kind=CUSTOM_REAL) :: sigma_xx,sigma_xy,sigma_xz,sigma_zy,sigma_zz,sigma_zx
@@ -721,67 +725,31 @@
       if (is_on_the_axis(ispec)) then
         do j = 1,NGLLZ
           do i = 1,NGLLX
-            iglob = ibool(i,j,ispec)
-            if (.not. iglob_is_forced(iglob)) then
-              ! along x direction and z direction
-              ! and assemble the contributions
-              ! we can merge the two loops because NGLLX == NGLLZ
-
-              ! assembles the contributions
-              tempx1l = 0._CUSTOM_REAL
-              tempx2l = 0._CUSTOM_REAL
-              tempz1l = 0._CUSTOM_REAL
-              tempz2l = 0._CUSTOM_REAL
-              do k = 1,NGLJ
-                tempx1l = tempx1l + tempx1(k,j) * hprimeBarwglj_xx(k,i)
-                tempx2l = tempx2l + tempx2(i,k) * hprimewgll_zz(k,j)
-                tempz1l = tempz1l + tempz1(k,j) * hprimeBarwglj_xx(k,i)
-                tempz2l = tempz2l + tempz2(i,k) * hprimewgll_zz(k,j)
-              enddo
-              ! sums contributions from each element to the global values
-!$OMP ATOMIC
-              accel_elastic(1,iglob) = accel_elastic(1,iglob) - (wzgll(j) * tempx1l + wxglj(i) * tempx2l)
-!$OMP ATOMIC
-              accel_elastic(2,iglob) = accel_elastic(2,iglob) - (wzgll(j) * tempz1l + wxglj(i) * tempz2l)
-!$OMP ATOMIC
-              accel_elastic(1,iglob) = accel_elastic(1,iglob) - wzgll(j) * tempx3(i,j)
-            endif
+            ! along x direction and z direction
+            ! and assemble the contributions
+            ! we can merge the two loops because NGLLX == NGLLZ
+            ! assembles the contributions
+            tempx1l = 0._CUSTOM_REAL
+            tempx2l = 0._CUSTOM_REAL
+            tempz1l = 0._CUSTOM_REAL
+            tempz2l = 0._CUSTOM_REAL
+            do k = 1,NGLJ
+              tempx1l = tempx1l + tempx1(k,j) * hprimeBarwglj_xx(k,i)
+              tempx2l = tempx2l + tempx2(i,k) * hprimewgll_zz(k,j)
+              tempz1l = tempz1l + tempz1(k,j) * hprimeBarwglj_xx(k,i)
+              tempz2l = tempz2l + tempz2(i,k) * hprimewgll_zz(k,j)
+            enddo
+            ! sums contributions from each element to the global values
+            fac1 = wzgll(j)
+            fac2 = wxglj(i)
+            sum_terms(1,i,j) = - (fac1 * tempx1l + fac2 * tempx2l) - fac1 * tempx3(i,j)
+            sum_terms(2,i,j) = - (fac1 * tempz1l + fac2 * tempz2l)
           enddo
         enddo
       else
         ! Axisym but not on the axis
         do j = 1,NGLLZ
           do i = 1,NGLLX
-            iglob = ibool(i,j,ispec)
-            if (.not. iglob_is_forced(iglob)) then
-              ! assembles the contributions
-              tempx1l = 0._CUSTOM_REAL
-              tempx2l = 0._CUSTOM_REAL
-              tempz1l = 0._CUSTOM_REAL
-              tempz2l = 0._CUSTOM_REAL
-              do k = 1,NGLLX
-                tempx1l = tempx1l + tempx1(k,j) * hprimewgll_xx(k,i)
-                tempx2l = tempx2l + tempx2(i,k) * hprimewgll_zz(k,j)
-                tempz1l = tempz1l + tempz1(k,j) * hprimewgll_xx(k,i)
-                tempz2l = tempz2l + tempz2(i,k) * hprimewgll_zz(k,j)
-              enddo
-              ! sums contributions from each element to the global values
-!$OMP ATOMIC
-              accel_elastic(1,iglob) = accel_elastic(1,iglob) - (wzgll(j) * tempx1l + wxgll(i) * tempx2l)
-!$OMP ATOMIC
-              accel_elastic(2,iglob) = accel_elastic(2,iglob) - (wzgll(j) * tempz1l + wxgll(i) * tempz2l)
-!$OMP ATOMIC
-              accel_elastic(1,iglob) = accel_elastic(1,iglob) - wzgll(j) * tempx3(i,j)
-            endif
-          enddo
-        enddo
-      endif
-    else
-      ! default (not AXISYM case)
-      do j = 1,NGLLZ
-        do i = 1,NGLLX
-          iglob = ibool(i,j,ispec)
-          if (.not. iglob_is_forced(iglob)) then
             ! assembles the contributions
             tempx1l = 0._CUSTOM_REAL
             tempx2l = 0._CUSTOM_REAL
@@ -794,11 +762,33 @@
               tempz2l = tempz2l + tempz2(i,k) * hprimewgll_zz(k,j)
             enddo
             ! sums contributions from each element to the global values
-!$OMP ATOMIC
-            accel_elastic(1,iglob) = accel_elastic(1,iglob) - (wzgll(j) * tempx1l + wxgll(i) * tempx2l)
-!$OMP ATOMIC
-            accel_elastic(2,iglob) = accel_elastic(2,iglob) - (wzgll(j) * tempz1l + wxgll(i) * tempz2l)
-          endif
+            fac1 = wzgll(j)
+            fac2 = wxgll(i)
+            sum_terms(1,i,j) = - (fac1 * tempx1l + fac2 * tempx2l) - fac1 * tempx3(i,j)
+            sum_terms(2,i,j) = - (fac1 * tempz1l + fac2 * tempz2l)
+          enddo
+        enddo
+      endif
+    else
+      ! default (not AXISYM case)
+      do j = 1,NGLLZ
+        do i = 1,NGLLX
+          ! assembles the contributions
+          tempx1l = 0._CUSTOM_REAL
+          tempx2l = 0._CUSTOM_REAL
+          tempz1l = 0._CUSTOM_REAL
+          tempz2l = 0._CUSTOM_REAL
+          do k = 1,NGLLX
+            tempx1l = tempx1l + tempx1(k,j) * hprimewgll_xx(k,i)
+            tempx2l = tempx2l + tempx2(i,k) * hprimewgll_zz(k,j)
+            tempz1l = tempz1l + tempz1(k,j) * hprimewgll_xx(k,i)
+            tempz2l = tempz2l + tempz2(i,k) * hprimewgll_zz(k,j)
+          enddo
+          ! sums contributions from each element to the global values
+          fac1 = wzgll(j)
+          fac2 = wxgll(i)
+          sum_terms(1,i,j) = - (fac1 * tempx1l + fac2 * tempx2l)
+          sum_terms(2,i,j) = - (fac1 * tempz1l + fac2 * tempz2l)
         enddo
       enddo
     endif ! AXISYM
@@ -808,17 +798,25 @@
       if (ispec_is_PML(ispec)) then
         do j = 1,NGLLZ
           do i = 1,NGLLX
-            iglob = ibool(i,j,ispec)
-            if (.not. iglob_is_forced(iglob)) then
-!$OMP ATOMIC
-              accel_elastic(1,iglob) = accel_elastic(1,iglob) - accel_elastic_PML(1,i,j)
-!$OMP ATOMIC
-              accel_elastic(2,iglob) = accel_elastic(2,iglob) - accel_elastic_PML(2,i,j)
-            endif
+            sum_terms(1,i,j) = sum_terms(1,i,j) - accel_elastic_PML(1,i,j)
+            sum_terms(2,i,j) = sum_terms(2,i,j) - accel_elastic_PML(2,i,j)
           enddo
         enddo
       endif
     endif
+
+    ! adds final contributions
+    do j = 1,NGLLZ
+      do i = 1,NGLLX
+        iglob = ibool(i,j,ispec)
+        if (.not. iglob_is_forced(iglob)) then
+!$OMP ATOMIC
+          accel_elastic(1,iglob) = accel_elastic(1,iglob) + sum_terms(1,i,j)
+!$OMP ATOMIC
+          accel_elastic(2,iglob) = accel_elastic(2,iglob) + sum_terms(2,i,j)
+        endif
+      enddo
+    enddo
 
   enddo ! end of loop over all spectral elements
 !$OMP ENDDO
