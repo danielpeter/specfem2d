@@ -31,18 +31,18 @@
    file name is ./DATA/STATIONS
    found            4  receivers
 
- Parameter file successfully read 
+ Parameter file successfully read
 
  Reading in SOURCE file...
 
  Source           1
-   Position xs, zs =    0.0000000000000000        0.0000000000000000     
+   Position xs, zs =    0.0000000000000000        0.0000000000000000
 
    Source type:            1
    (1=force, 2=moment tensor)
 
    Force source:
-   Angle of the source (deg) =    180.00000000000000     
+   Angle of the source (deg) =    180.00000000000000
 
    Time function type:           1
    ( 0=Normalized Gaussian,  1=Ricker,          2=First derivative,  3=Gaussian,        4=Dirac,
@@ -50,8 +50,8 @@
     10=Sinusoidal,          11=Ormsby,         12=Brune,            13=Smoothed Brune, 14=Yoffe,
     15=Integrated Yoffe )
    Ricker wavelet (second-derivative):
-   Frequency, delay   =   0.10000000000000001        0.0000000000000000     
-   Multiplying factor =    10000000000.000000     
+   Frequency, delay   =   0.10000000000000001        0.0000000000000000
+   Multiplying factor =    10000000000.000000
 
  all sources are okay
 
@@ -59,7 +59,7 @@
 
  -------------------------------------------------------------------------------
  -------------------------------------------------------------------------------
- Program SPECFEM2D: 
+ Program SPECFEM2D:
  -------------------------------------------------------------------------------
  -------------------------------------------------------------------------------
  Lamb's problem P-SV elastic
@@ -87,11 +87,11 @@
 
      Display frequency . . . (NTSTEP_BETWEEN_OUTPUT_INFO) =   1000
      Color display . . . . . . . . . . . . . . . (colors) =      1
-      == 0     black and white display              
-      == 1     color display                        
+      == 0     black and white display
+      == 1     color display
      Numbered mesh . . . . . . . . . . . . . . .(numbers) =      0
-      == 0     do not number the mesh               
-      == 1     number the mesh                      
+      == 0     do not number the mesh
+      == 1     number the mesh
 
 
  C o n t r o l
@@ -123,7 +123,7 @@
      Subsampling of velocity model display. (subsamp_postscript) =      1
 
 
- I t e r a t i o n s 
+ I t e r a t i o n s
  ===================
 
      Number of time iterations . . . . .(NSTEP) =    5000
@@ -242,8 +242,8 @@
    in reality they have more degrees of freedom)
 
  Mesh dimensions:
-   Xmin,Xmax of the whole mesh =    0.0000000000000000        67000.000000000000     
-   Zmin,Zmax of the whole mesh =   -60000.000000000000        0.0000000000000000     
+   Xmin,Xmax of the whole mesh =    0.0000000000000000        67000.000000000000
+   Zmin,Zmax of the whole mesh =   -60000.000000000000        0.0000000000000000
 
  Material properties:
    MODEL                   : default
@@ -252,9 +252,9 @@
 
    setting up material arrays
    elasticitiy:
-     rho : min/max =    2300.00000     /   2300.00000    
-     vs  : min/max =    1500.00000     /   1500.00000    
-     vp  : min/max =    2800.00000     /   2800.00000    
+     rho : min/max =    2300.00000     /   2300.00000
+     vs  : min/max =    1500.00000     /   1500.00000
+     vp  : min/max =    2800.00000     /   2800.00000
 
    all material arrays done
 
@@ -319,9 +319,9 @@
    simulation start time t0 =   -12.000000000000000       s
 
    Source:            1
-     Onset time. . . . . . =   -12.000000000000000     
-     Fundamental period. . =    10.000000000000000     
-     Fundamental frequency =   0.10000000000000001     
+     Onset time. . . . . . =   -12.000000000000000
+     Fundamental period. . =    10.000000000000000
+     Fundamental frequency =   0.10000000000000001
      The onset time is ok
 
  ********************
@@ -334,11 +334,11 @@
                   in elastic domain
 
    using force point source:
-     xi coordinate of source in that element   :  -1.0000000000000000     
-     gamma coordinate of source in that element:   1.0000000000000000     
+     xi coordinate of source in that element   :  -1.0000000000000000
+     gamma coordinate of source in that element:   1.0000000000000000
 
-     original x            :    0.00000000    
-     original z            :    0.00000000    
+     original x            :    0.00000000
+     original z            :    0.00000000
      closest estimate found:    0.00000000      m away
 
  End of source detection - done
@@ -356,9 +356,9 @@
  reading receiver information from ./DATA/STATIONS file
 
 
- Station #            1     DB      X20                             
-      original x            :    44267.8594    
-      original z            :    0.00000000    
+ Station #            1     DB      X20
+      original x            :    44267.8594
+      original z            :    0.00000000
       distance from source  :    44267.8594      m
       closest estimate found:    0.00000000      m away
 
@@ -366,13 +366,13 @@
                        in element         2373
                        in elastic domain
       at coordinates:
-        xi    =   0.71429253731344011     
-        gamma =    1.0000000000000000     
+        xi    =   0.71429253731344011
+        gamma =    1.0000000000000000
 
 
- Station #            2     DB      X30                             
-      original x            :    32303.5703    
-      original z            :    0.00000000    
+ Station #            2     DB      X30
+      original x            :    32303.5703
+      original z            :    0.00000000
       distance from source  :    32303.5703      m
       closest estimate found:    0.00000000      m away
 
@@ -380,13 +380,13 @@
                        in element         2399
                        in elastic domain
       at coordinates:
-        xi    =   0.14285373134328289     
-        gamma =    1.0000000000000000     
+        xi    =   0.14285373134328289
+        gamma =    1.0000000000000000
 
 
- Station #            3     DB      X40                             
-      original x            :    20339.2891    
-      original z            :    0.00000000    
+ Station #            3     DB      X40
+      original x            :    20339.2891
+      original z            :    0.00000000
       distance from source  :    20339.2891      m
       closest estimate found:    0.00000000      m away
 
@@ -394,13 +394,13 @@
                        in element         2385
                        in elastic domain
       at coordinates:
-        xi    =  -0.42856119402984588     
-        gamma =    1.0000000000000000     
+        xi    =  -0.42856119402984588
+        gamma =    1.0000000000000000
 
 
- Station #            4     DB      X50                             
-      original x            :    8375.00000    
-      original z            :    0.00000000    
+ Station #            4     DB      X50
+      original x            :    8375.00000
+      original z            :    0.00000000
       distance from source  :    8375.00000      m
       closest estimate found:    0.00000000      m away
 
@@ -408,8 +408,8 @@
                        in element         2370
                        in elastic domain
       at coordinates:
-        xi    =    1.0000000000000000     
-        gamma =    1.0000000000000000     
+        xi    =    1.0000000000000000
+        gamma =    1.0000000000000000
 
  maximum error in location of all the receivers:    0.00000000      m
 
@@ -434,9 +434,9 @@
  Checking mesh and stability
 
  ********
- Model: P (or PI) velocity min,max =    2800.0000000000000        2800.0000000000000     
- Model: S velocity min,max         =    1500.0000092753623        1500.0000092753623     
- Model: density min,max            =    2300.0000000000000        2300.0000000000000     
+ Model: P (or PI) velocity min,max =    2800.0000000000000        2800.0000000000000
+ Model: S velocity min,max         =    1500.0000092753623        1500.0000092753623
+ Model: density min,max            =    2300.0000000000000        2300.0000000000000
  ********
 
 
@@ -444,21 +444,21 @@
  *** Verification of simulation parameters ***
  *********************************************
 
- *** Max grid size =    1000.0000000000073     
- *** Min grid size =    837.50000000000000     
- *** Max/min ratio =    1.1940298507462774     
+ *** Max grid size =    1000.0000000000073
+ *** Min grid size =    837.50000000000000
+ *** Max/min ratio =    1.1940298507462774
 
- *** Minimum GLL point distance  =    144.61377539103455     
- *** Average GLL point distance  =    209.37500000000000     
+ *** Minimum GLL point distance  =    144.61377539103455
+ *** Average GLL point distance  =    209.37500000000000
 
- *** Minimum period resolved     =   0.83333332818036032     
+ *** Minimum period resolved     =   0.83333332818036032
  *** Maximum frequency resolved  =    1.2000000074202812      Hz
 
  *** Maximum suggested time step                 =    2.5823888462684741E-002
- *** Maximum suggested (Ricker) source frequency =   0.48000000296811252     
+ *** Maximum suggested (Ricker) source frequency =   0.48000000296811252
 
  *** for DT :    1.99999996E-02
- *** Max CFL stability condition of the time scheme based on P wave velocity (must be below about 0.50 or so) =   0.38723835159255349     
+ *** Max CFL stability condition of the time scheme based on P wave velocity (must be below about 0.50 or so) =   0.38723835159255349
 
  ----
  Number of points per wavelength:
@@ -467,11 +467,11 @@
    maximum dominant source frequency =   0.25000000000000000      Hz
 
 
-   Nb pts / lambdaP_fmax min =    44.7999992    
-   Nb pts / lambdaP_fmax max =    44.7999992    
+   Nb pts / lambdaP_fmax min =    44.7999992
+   Nb pts / lambdaP_fmax max =    44.7999992
 
-   Nb pts / lambdaS_fmax min =    24.0000000    
-   Nb pts / lambdaS_fmax max =    24.0000000    
+   Nb pts / lambdaS_fmax min =    24.0000000
+   Nb pts / lambdaS_fmax max =    24.0000000
 
  -----------------------------------------
 
@@ -585,9 +585,9 @@
  Elapsed time in hh:mm:ss =      0 h 00 m 00 s
  Mean elapsed time per time step in seconds =    1.3999938964843750E-003
  Time steps remaining =         4995
- Estimated remaining time in seconds =    6.9929695129394531     
+ Estimated remaining time in seconds =    6.9929695129394531
  Estimated remaining time in hh:mm:ss =      0 h 00 m 06 s
- Estimated total run time in seconds =    6.9999694824218750     
+ Estimated total run time in seconds =    6.9999694824218750
  Estimated total run time in hh:mm:ss =      0 h 00 m 06 s
  The run will finish approximately on: Fri Oct 02, 2026 12:06
 
@@ -608,13 +608,13 @@
  Time:    7.9800 s
  We have done    19.9839973     % of the total
  Max norm of vector field in solid (elastic) =    2.47244461E-04
- Elapsed time in seconds =    1.0929999351501465     
+ Elapsed time in seconds =    1.0929999351501465
  Elapsed time in hh:mm:ss =      0 h 00 m 01 s
  Mean elapsed time per time step in seconds =    1.0929999351501464E-003
  Time steps remaining =         4000
- Estimated remaining time in seconds =    4.3719997406005859     
+ Estimated remaining time in seconds =    4.3719997406005859
  Estimated remaining time in hh:mm:ss =      0 h 00 m 04 s
- Estimated total run time in seconds =    5.4649996757507324     
+ Estimated total run time in seconds =    5.4649996757507324
  Estimated total run time in hh:mm:ss =      0 h 00 m 05 s
  The run will finish approximately on: Fri Oct 02, 2026 12:06
 
@@ -635,13 +635,13 @@
  Time:   27.9800 s
  We have done    39.9879990     % of the total
  Max norm of vector field in solid (elastic) =    1.43404950E-05
- Elapsed time in seconds =    2.1879999637603760     
+ Elapsed time in seconds =    2.1879999637603760
  Elapsed time in hh:mm:ss =      0 h 00 m 02 s
  Mean elapsed time per time step in seconds =    1.0939999818801881E-003
  Time steps remaining =         3000
- Estimated remaining time in seconds =    3.2819999456405644     
+ Estimated remaining time in seconds =    3.2819999456405644
  Estimated remaining time in hh:mm:ss =      0 h 00 m 03 s
- Estimated total run time in seconds =    5.4699999094009399     
+ Estimated total run time in seconds =    5.4699999094009399
  Estimated total run time in hh:mm:ss =      0 h 00 m 05 s
  The run will finish approximately on: Fri Oct 02, 2026 12:06
 
@@ -662,13 +662,13 @@
  Time:   47.9800 s
  We have done    59.9919968     % of the total
  Max norm of vector field in solid (elastic) =    1.09133443E-05
- Elapsed time in seconds =    3.2829999923706055     
+ Elapsed time in seconds =    3.2829999923706055
  Elapsed time in hh:mm:ss =      0 h 00 m 03 s
  Mean elapsed time per time step in seconds =    1.0943333307902017E-003
  Time steps remaining =         2000
- Estimated remaining time in seconds =    2.1886666615804033     
+ Estimated remaining time in seconds =    2.1886666615804033
  Estimated remaining time in hh:mm:ss =      0 h 00 m 02 s
- Estimated total run time in seconds =    5.4716666539510088     
+ Estimated total run time in seconds =    5.4716666539510088
  Estimated total run time in hh:mm:ss =      0 h 00 m 05 s
  The run will finish approximately on: Fri Oct 02, 2026 12:06
 
@@ -689,13 +689,13 @@
  Time:   67.9800 s
  We have done    79.9960022     % of the total
  Max norm of vector field in solid (elastic) =    1.25789438E-06
- Elapsed time in seconds =    4.3789999485015869     
+ Elapsed time in seconds =    4.3789999485015869
  Elapsed time in hh:mm:ss =      0 h 00 m 04 s
  Mean elapsed time per time step in seconds =    1.0947499871253967E-003
  Time steps remaining =         1000
- Estimated remaining time in seconds =    1.0947499871253967     
+ Estimated remaining time in seconds =    1.0947499871253967
  Estimated remaining time in hh:mm:ss =      0 h 00 m 01 s
- Estimated total run time in seconds =    5.4737499356269836     
+ Estimated total run time in seconds =    5.4737499356269836
  Estimated total run time in hh:mm:ss =      0 h 00 m 05 s
  The run will finish approximately on: Fri Oct 02, 2026 12:06
 
@@ -716,13 +716,13 @@
  Time:   87.9800 s
  We have done    100.000000     % of the total
  Max norm of vector field in solid (elastic) =    2.25327040E-06
- Elapsed time in seconds =    5.4830000400543213     
+ Elapsed time in seconds =    5.4830000400543213
  Elapsed time in hh:mm:ss =      0 h 00 m 05 s
  Mean elapsed time per time step in seconds =    1.0966000080108642E-003
  Time steps remaining =            0
- Estimated remaining time in seconds =    0.0000000000000000     
+ Estimated remaining time in seconds =    0.0000000000000000
  Estimated remaining time in hh:mm:ss =      0 h 00 m 00 s
- Estimated total run time in seconds =    5.4830000400543213     
+ Estimated total run time in seconds =    5.4830000400543213
  Estimated total run time in hh:mm:ss =      0 h 00 m 05 s
 
 
@@ -756,7 +756,7 @@
 
  -------------------------------------------------------------------------------
  -------------------------------------------------------------------------------
- Program SPECFEM2D: 
+ Program SPECFEM2D:
  -------------------------------------------------------------------------------
  -------------------------------------------------------------------------------
  Lamb's problem P-SV elastic

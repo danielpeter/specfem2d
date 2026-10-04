@@ -31,12 +31,12 @@
    file name is ./DATA/STATIONS
    found            4  receivers
 
- Parameter file successfully read 
+ Parameter file successfully read
 
  Reading in SOURCE file...
 
  Source           1
-   Position xs, zs =    0.0000000000000000       -30000.000000000000     
+   Position xs, zs =    0.0000000000000000       -30000.000000000000
 
    Source type:            2
    (1=force, 2=moment tensor)
@@ -44,7 +44,7 @@
    Moment tensor source:
    Mxx of the source =    9.9999999999999995E-008
    Mzz of the source =    9.9999999999999995E-008
-   Mxz of the source =    0.0000000000000000     
+   Mxz of the source =    0.0000000000000000
 
    Time function type:           0
    ( 0=Normalized Gaussian,  1=Ricker,          2=First derivative,  3=Gaussian,        4=Dirac,
@@ -53,7 +53,7 @@
     15=Integrated Yoffe )
    Normalized Gaussian:
    Frequency =   0.50000000000000000       (half-duration =    2.00000000      s)
-   delay     =    0.0000000000000000     
+   delay     =    0.0000000000000000
    Multiplying factor =    7.7000000000000000E+020
 
  all sources are okay
@@ -62,7 +62,7 @@
 
  -------------------------------------------------------------------------------
  -------------------------------------------------------------------------------
- Program SPECFEM2D: 
+ Program SPECFEM2D:
  -------------------------------------------------------------------------------
  -------------------------------------------------------------------------------
  axisymmetric P-SV acoustic
@@ -90,11 +90,11 @@
 
      Display frequency . . . (NTSTEP_BETWEEN_OUTPUT_INFO) =   1000
      Color display . . . . . . . . . . . . . . . (colors) =      1
-      == 0     black and white display              
-      == 1     color display                        
+      == 0     black and white display
+      == 1     color display
      Numbered mesh . . . . . . . . . . . . . . .(numbers) =      0
-      == 0     do not number the mesh               
-      == 1     number the mesh                      
+      == 0     do not number the mesh
+      == 1     number the mesh
 
 
  C o n t r o l
@@ -126,7 +126,7 @@
      Subsampling of velocity model display. (subsamp_postscript) =      1
 
 
- I t e r a t i o n s 
+ I t e r a t i o n s
  ===================
 
      Number of time iterations . . . . .(NSTEP) =    1100
@@ -242,8 +242,8 @@
    in reality they have more degrees of freedom)
 
  Mesh dimensions:
-   Xmin,Xmax of the whole mesh =    0.0000000000000000        67000.000000000000     
-   Zmin,Zmax of the whole mesh =   -60000.000000000000        0.0000000000000000     
+   Xmin,Xmax of the whole mesh =    0.0000000000000000        67000.000000000000
+   Zmin,Zmax of the whole mesh =   -60000.000000000000        0.0000000000000000
 
  Material properties:
    MODEL                   : default
@@ -252,8 +252,8 @@
 
    setting up material arrays
    fluid:
-     rho : min/max =    2300.00000     /   2300.00000    
-     vp  : min/max =    2800.00000     /   2800.00000    
+     rho : min/max =    2300.00000     /   2300.00000
+     vp  : min/max =    2800.00000     /   2800.00000
 
    all material arrays done
 
@@ -319,15 +319,15 @@
      Normalized Gaussian - half-duration =    2.0000000000000000       s
 
      2.5D seismic moment M0 =    9.43053551E+20 (dyne-cm)
-           moment magnitude =    3.28302431    
+           moment magnitude =    3.28302431
 
  determining source onset times...
    simulation start time t0 =   -4.0000000000000000       s
 
    Source:            1
-     Onset time. . . . . . =   -4.0000000000000000     
-     Fundamental period. . =    2.0000000000000000     
-     Fundamental frequency =   0.50000000000000000     
+     Onset time. . . . . . =   -4.0000000000000000
+     Fundamental period. . =    2.0000000000000000
+     Fundamental frequency =   0.50000000000000000
      The onset time is ok
 
  ********************
@@ -340,11 +340,11 @@
                   in acoustic domain
 
    using moment-tensor source:
-     xi coordinate of source in that element   :  -1.0000000000000000     
-     gamma coordinate of source in that element:  -1.0000000000000000     
+     xi coordinate of source in that element   :  -1.0000000000000000
+     gamma coordinate of source in that element:  -1.0000000000000000
 
-     original x            :    0.00000000    
-     original z            :   -30000.0000    
+     original x            :    0.00000000
+     original z            :   -30000.0000
      closest estimate found:    0.00000000      m away
 
  End of source detection - done
@@ -362,9 +362,9 @@
  reading receiver information from ./DATA/STATIONS file
 
 
- Station #            1     DB      X20                             
-      original x            :    44267.8594    
-      original z            :   -50.0000000    
+ Station #            1     DB      X20
+      original x            :    44267.8594
+      original z            :   -50.0000000
       distance from source  :    53447.6016      m
       closest estimate found:    6.39488462E-14  m away
 
@@ -372,13 +372,13 @@
                        in element          174
                        in acoustic domain
       at coordinates:
-        xi    =  -0.57142686567164303     
-        gamma =   0.96999999999999997     
+        xi    =  -0.57142686567164303
+        gamma =   0.96999999999999997
 
 
- Station #            2     DB      X30                             
-      original x            :    32303.5703    
-      original z            :   -50.0000000    
+ Station #            2     DB      X30
+      original x            :    32303.5703
+      original z            :   -50.0000000
       distance from source  :    44051.3711      m
       closest estimate found:    7.10542736E-14  m away
 
@@ -386,13 +386,13 @@
                        in element          170
                        in acoustic domain
       at coordinates:
-        xi    =   0.28571343283582074     
-        gamma =   0.96999999999999997     
+        xi    =   0.28571343283582074
+        gamma =   0.96999999999999997
 
 
- Station #            3     DB      X40                             
-      original x            :    20339.2891    
-      original z            :   -50.0000000    
+ Station #            3     DB      X40
+      original x            :    20339.2891
+      original z            :   -50.0000000
       distance from source  :    36203.4414      m
       closest estimate found:    7.10542736E-14  m away
 
@@ -400,13 +400,13 @@
                        in element          167
                        in acoustic domain
       at coordinates:
-        xi    =  -0.85714029850746132     
-        gamma =   0.96999999999999997     
+        xi    =  -0.85714029850746132
+        gamma =   0.96999999999999997
 
 
- Station #            4     DB      X50                             
-      original x            :    8375.00000    
-      original z            :   -50.0000000    
+ Station #            4     DB      X50
+      original x            :    8375.00000
+      original z            :   -50.0000000
       distance from source  :    31098.9258      m
       closest estimate found:    6.39488462E-14  m away
 
@@ -414,8 +414,8 @@
                        in element          163
                        in acoustic domain
       at coordinates:
-        xi    =    0.0000000000000000     
-        gamma =   0.96999999999999997     
+        xi    =    0.0000000000000000
+        gamma =   0.96999999999999997
 
  maximum error in location of all the receivers:    7.10542736E-14  m
 
@@ -440,9 +440,9 @@
  Checking mesh and stability
 
  ********
- Model: P (or PI) velocity min,max =    2800.0000000000000        2800.0000000000000     
- Model: S velocity min,max         =    0.0000000000000000        0.0000000000000000     
- Model: density min,max            =    2300.0000000000000        2300.0000000000000     
+ Model: P (or PI) velocity min,max =    2800.0000000000000        2800.0000000000000
+ Model: S velocity min,max         =    0.0000000000000000        0.0000000000000000
+ Model: density min,max            =    2300.0000000000000        2300.0000000000000
  ********
 
 
@@ -450,21 +450,21 @@
  *** Verification of simulation parameters ***
  *********************************************
 
- *** Max grid size =    3350.0000000000000     
- *** Min grid size =    3333.3333333333285     
- *** Max/min ratio =    1.0050000000000014     
+ *** Max grid size =    3350.0000000000000
+ *** Min grid size =    3333.3333333333285
+ *** Max/min ratio =    1.0050000000000014
 
- *** Minimum GLL point distance  =    575.57721548670384     
- *** Average GLL point distance  =    833.33333333333212     
+ *** Minimum GLL point distance  =    575.57721548670384
+ *** Average GLL point distance  =    833.33333333333212
 
- *** Minimum period resolved     =    1.4955357142857142     
+ *** Minimum period resolved     =    1.4955357142857142
  *** Maximum frequency resolved  =   0.66865671641791047      Hz
 
- *** Maximum suggested time step                 =   0.10278164562262568     
- *** Maximum suggested (Ricker) source frequency =   0.26746268656716421     
+ *** Maximum suggested time step                 =   0.10278164562262568
+ *** Maximum suggested (Ricker) source frequency =   0.26746268656716421
 
- *** for DT :   0.100000001    
- *** Max CFL stability condition of the time scheme based on P wave velocity (must be below about 0.50 or so) =   0.48646817918814605     
+ *** for DT :   0.100000001
+ *** Max CFL stability condition of the time scheme based on P wave velocity (must be below about 0.50 or so) =   0.48646817918814605
 
  mesh resolution output files:
    written file: ./OUTPUT_FILES/mesh00000_res_minimum_period.vtk
@@ -503,7 +503,7 @@
  Preparing source time function
    time stepping scheme:   Newmark
    time stepping stages:            1
-   time step size      :   0.100000001    
+   time step size      :   0.100000001
 
    number of time steps:         1100
    number of sources   :            1
@@ -539,25 +539,25 @@
  ******************************************************************
  Time: -3.600000E+00 s
  We have done   0.363967240     % of the total
- Max absolute value of scalar field in fluid (acoustic) =    101849824.    
+ Max absolute value of scalar field in fluid (acoustic) =    101849824.
  Elapsed time in seconds =    9.9992752075195312E-004
  Elapsed time in hh:mm:ss =      0 h 00 m 00 s
  Mean elapsed time per time step in seconds =    1.9998550415039061E-004
  Time steps remaining =         1095
- Estimated remaining time in seconds =   0.21898412704467773     
+ Estimated remaining time in seconds =   0.21898412704467773
  Estimated remaining time in hh:mm:ss =      0 h 00 m 00 s
- Estimated total run time in seconds =   0.21998405456542969     
+ Estimated total run time in seconds =   0.21998405456542969
  Estimated total run time in hh:mm:ss =      0 h 00 m 00 s
  The run will finish approximately on: Sun Oct 04, 2026 15:52
 
  Creating color image of size          800  x          761  for time step            5
  drawing scalar image of the forward wavefield displacement...
- Color image maximum amplitude =    189.39999809799656     
+ Color image maximum amplitude =    189.39999809799656
  Color image created
 
  Creating color image of size          800  x          761  for time step          500
  drawing scalar image of the forward wavefield displacement...
- Color image maximum amplitude =    4.0974881372239995     
+ Color image maximum amplitude =    4.0974881372239995
  Color image created
 
 
@@ -566,7 +566,7 @@
  ******************************************************************
  Time:   95.9000 s
  We have done    90.9008179     % of the total
- Max absolute value of scalar field in fluid (acoustic) =    4574085.50    
+ Max absolute value of scalar field in fluid (acoustic) =    4574085.50
  Elapsed time in seconds =    6.8000078201293945E-002
  Elapsed time in hh:mm:ss =      0 h 00 m 00 s
  Mean elapsed time per time step in seconds =    6.8000078201293951E-005
@@ -579,7 +579,7 @@
 
  Creating color image of size          800  x          761  for time step         1000
  drawing scalar image of the forward wavefield displacement...
- Color image maximum amplitude =    5.1614127603471891     
+ Color image maximum amplitude =    5.1614127603471891
  Color image created
 
 
@@ -588,12 +588,12 @@
  ******************************************************************
  Time:  105.9000 s
  We have done    100.000000     % of the total
- Max absolute value of scalar field in fluid (acoustic) =    3275529.00    
+ Max absolute value of scalar field in fluid (acoustic) =    3275529.00
  Elapsed time in seconds =    8.3999872207641602E-002
  Elapsed time in hh:mm:ss =      0 h 00 m 00 s
  Mean elapsed time per time step in seconds =    7.6363520188765097E-005
  Time steps remaining =            0
- Estimated remaining time in seconds =    0.0000000000000000     
+ Estimated remaining time in seconds =    0.0000000000000000
  Estimated remaining time in hh:mm:ss =      0 h 00 m 00 s
  Estimated total run time in seconds =    8.3999872207641602E-002
  Estimated total run time in hh:mm:ss =      0 h 00 m 00 s
@@ -604,7 +604,7 @@
 
  Creating color image of size          800  x          761  for time step         1100
  drawing scalar image of the forward wavefield displacement...
- Color image maximum amplitude =    3.1566255530808580     
+ Color image maximum amplitude =    3.1566255530808580
  Color image created
 
 
@@ -629,7 +629,7 @@
 
  -------------------------------------------------------------------------------
  -------------------------------------------------------------------------------
- Program SPECFEM2D: 
+ Program SPECFEM2D:
  -------------------------------------------------------------------------------
  -------------------------------------------------------------------------------
  axisymmetric P-SV acoustic

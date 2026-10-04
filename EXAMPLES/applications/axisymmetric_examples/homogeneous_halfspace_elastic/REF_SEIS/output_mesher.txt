@@ -16,7 +16,7 @@
    file name is ./DATA/STATIONS
    found            4  receivers
 
- Parameter file successfully read 
+ Parameter file successfully read
 
 
  Mesh from internal meshing:
@@ -25,8 +25,8 @@
 
  --------
  Material #           1  isotropic
- rho,cp,cs   =    2300.0000000000000        2800.0000000000000        1500.0000000000000     
- Qkappa, Qmu =    9999.0000000000000        9999.0000000000000     
+ rho,cp,cs   =    2300.0000000000000        2800.0000000000000        1500.0000000000000
+ Qkappa, Qmu =    9999.0000000000000        9999.0000000000000
  Material is solid
  --------
 
@@ -49,12 +49,12 @@
  IZ from            1  to           60
  Material #            1  isotropic
  Material is solid
- vp     =    2800.00000    
- vs     =    1500.00000    
- rho    =    2300.00000    
- Poisson's ratio =   0.298747778    
- QKappa =    9999.00000    
- Qmu    =    9999.00000    
+ vp     =    2800.00000
+ vs     =    1500.00000
+ rho    =    2300.00000
+ Poisson's ratio =   0.298747778
+ QKappa =    9999.00000
+ Qmu    =    9999.00000
  ------
 
  creating mesh from internal meshing:
@@ -70,13 +70,13 @@
  Reading in SOURCE file...
 
  Source           1
-   Position xs, zs =    0.0000000000000000        0.0000000000000000     
+   Position xs, zs =    0.0000000000000000        0.0000000000000000
 
    Source type:            1
    (1=force, 2=moment tensor)
 
    Force source:
-   Angle of the source (deg) =    180.00000000000000     
+   Angle of the source (deg) =    180.00000000000000
 
    Time function type:           1
    ( 0=Normalized Gaussian,  1=Ricker,          2=First derivative,  3=Gaussian,        4=Dirac,
@@ -84,8 +84,8 @@
     10=Sinusoidal,          11=Ormsby,         12=Brune,            13=Smoothed Brune, 14=Yoffe,
     15=Integrated Yoffe )
    Ricker wavelet (second-derivative):
-   Frequency, delay   =   0.10000000000000001        0.0000000000000000     
-   Multiplying factor =    10000000000.000000     
+   Frequency, delay   =   0.10000000000000001        0.0000000000000000
+   Multiplying factor =    10000000000.000000
 
  all sources are okay
 
@@ -107,9 +107,9 @@
  Axial elements:           60
 
 
- Mesh dimensions: 
-   Min and max value of X in the grid =    0.0000000000000000        67000.000000000000     
-   Min and max value of Z in the grid =   -60000.000000000000        0.0000000000000000     
+ Mesh dimensions:
+   Min and max value of X in the grid =    0.0000000000000000        67000.000000000000
+   Min and max value of Z in the grid =   -60000.000000000000        0.0000000000000000
 
  checking mesh elements for invalid Jacobians...
    number of elements:         4800
