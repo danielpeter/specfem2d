@@ -1062,6 +1062,54 @@ jobs:
       run: ./.github/scripts/run_tests.sh
       shell: bash
 
+  linuxTest_25:
+    name: Test 25 - axisymmetric homogeneous elastic
+    runs-on: ubuntu-latest
+    needs: [compilationChecks]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install packages
+      run: ./.github/scripts/run_install.sh
+      shell: bash
+
+    - name: Run build
+      env:
+        TESTFLAGS: --with-mpi
+      run: ./.github/scripts/run_build.sh
+      shell: bash
+
+    - name: Run test
+      env:
+        TESTDIR: EXAMPLES/applications/axisymmetric_examples/homogeneous_halfspace_elastic
+      run: ./.github/scripts/run_tests.sh
+      shell: bash
+
+  linuxTest_26:
+    name: Test 26 - axisymmetric homogeneous acoustic
+    runs-on: ubuntu-latest
+    needs: [compilationChecks]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install packages
+      run: ./.github/scripts/run_install.sh
+      shell: bash
+
+    - name: Run build
+      env:
+        TESTFLAGS: --with-mpi
+      run: ./.github/scripts/run_build.sh
+      shell: bash
+
+    - name: Run test
+      env:
+        TESTDIR: EXAMPLES/applications/axisymmetric_examples/homogeneous_halfspace_acoustic
+      run: ./.github/scripts/run_tests.sh
+      shell: bash
+
 
   # intermediate workflow check
   exampleChecks:
@@ -1069,7 +1117,8 @@ jobs:
             linuxTest_6,linuxTest_7,linuxTest_8,linuxTest_9,linuxTest_10,
             linuxTest_11,linuxTest_12,linuxTest_13,linuxTest_14,linuxTest_15,
             linuxTest_16,linuxTest_17,linuxTest_18,linuxTest_19,linuxTest_20,
-            linuxTest_21,linuxTest_22,linuxTest_23,linuxTest_24]
+            linuxTest_21,linuxTest_22,linuxTest_23,linuxTest_24,linuxTest_25,
+            linuxTest_26]
     runs-on: ubuntu-latest
     steps:
     - run: echo "example tests passed"

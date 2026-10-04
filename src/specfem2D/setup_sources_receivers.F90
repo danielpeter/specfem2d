@@ -78,7 +78,7 @@
 #endif
      MAX_STRING_LEN
 
-  use specfem_par, only: NSOURCES,x_source,z_source,vx_source,vz_source,&
+  use specfem_par, only: NSOURCES,x_source,z_source,vx_source,vz_source, &
                          xi_source,gamma_source, &
                          islice_selected_source,ispec_selected_source,iglob_source, &
                          SOURCE_IS_MOVING,NSTEP,DT,t0,tshift_src,coord

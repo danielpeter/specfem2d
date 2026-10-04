@@ -134,6 +134,7 @@ case "$TESTID" in
     run_simple "EXAMPLES/applications/Rayleigh_wave_no_crack/" 10
     run_simple "EXAMPLES/applications/initial_mode_LDDRK" 10
     run_simple "EXAMPLES/applications/axisymmetric_examples/axisymmetric_case_AXISYM_option/" 10
+    run_simple "EXAMPLES/applications/axisymmetric_examples/homogeneous_halfspace_acoustic/" 10
     run_simple "EXAMPLES/reproducible_study/Morency2008_poroelastic_acoustic/" 10
     run_simple "EXAMPLES/reproducible_study/Komatitsch2000_fluid_solid/fluid_solid_external_mesh/" 10
     run_kernel "EXAMPLES/reproducible_study/Tromp2005_kernel" 500 "no_backward"

@@ -1439,6 +1439,17 @@
   if (POROELASTIC_SIMULATION) then
     if (ATTENUATION_PORO_FLUID_PART .and. time_stepping_scheme /= 1) &
       call stop_the_code('RK and LDDRK time scheme not supported for poroelastic simulations with attenuation')
+    if (GRAVITY) &
+      call stop_the_code('GRAVITY not supported for poroelastic simulations')
+    if (GPU) &
+      call stop_the_code('poroelastic not implemented in GPU MODE yet')
+  endif
+
+  if (ELECTROMAGNETIC_SIMULATION) then
+    if (GRAVITY) &
+      call stop_the_code('GRAVITY not supported for electromagnetic simulations')
+    if (GPU) &
+      call stop_the_code('electromagnetic not implemented in GPU MODE yet')
   endif
 
 ! absorbing boundaries work, but not perfect for anisotropic
