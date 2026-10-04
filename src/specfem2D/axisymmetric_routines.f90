@@ -69,16 +69,16 @@
 !   If it is on the axis the source need to be in the x direction (test if sourceangle =0 /180+-epsilon)
 !  Warning if the source is not on the axis (circular source)
 ! _Not implemented yet (or not tested):
-!   poroelasticity, anisotropy, Stacey absorbing boundaries, time stepping scheme /= 1, PML rotated, adjoint
+!   poroelasticity, anisotropy, time stepping scheme /= 1, PML rotated, adjoint
 !   simulations, periodic conditions, noise tomographies
 
-  use constants, only: PI,TWO,TINYVAL,myrank,NGLLZ,NGLLX,IMAIN,MAX_STRING_LEN,OUTPUT_FILES
+  use constants, only: PI,TWO,TINYVAL,myrank,NGLLZ,NGLLX,IEDGE4,IMAIN,MAX_STRING_LEN,OUTPUT_FILES
 
   use specfem_par, only: any_poroelastic, ROTATE_PML_ACTIVATE, &
                          STACEY_ABSORBING_CONDITIONS, &
                          NSOURCES, source_type, ispec_selected_source, ADD_PERIODIC_CONDITIONS, &
                          anglesource, is_on_the_axis, ispec_is_elastic, islice_selected_source, &
-                         NOISE_TOMOGRAPHY
+                         NOISE_TOMOGRAPHY, num_abs_boundary_faces, abs_boundary_ispec, codeabs
 
   use specfem_par, only: ibool,coord,nspec,nglob,SAVE_MESH_FILES
 
@@ -86,7 +86,8 @@
 
   ! Local parameters
   integer :: isource
-  integer :: ispec,i,j,ier
+  integer :: ispec,i,j,ier,ispecabs
+  logical :: on_axis
   ! vtk output
   double precision,dimension(:),allocatable :: xstore,zstore
   character(len=MAX_STRING_LEN) :: filename,prname
@@ -102,8 +103,6 @@
     call exit_MPI(myrank,'Poroelasticity is not implemented for axisymmetric simulations')
   if (ROTATE_PML_ACTIVATE) &
     call exit_MPI(myrank,'ROTATE_PML_ACTIVATE is not implemented for axisymmetric simulations')
-  if (STACEY_ABSORBING_CONDITIONS) &
-    call exit_MPI(myrank,'Stacey boundary conditions are not implemented for axisymmetric simulations, use PML instead')
   if (ADD_PERIODIC_CONDITIONS) &
     call exit_MPI(myrank,'Periodic conditions (ADD_PERIODIC_CONDITIONS) are not implemented for axisymmetric simulations')
   if (NOISE_TOMOGRAPHY /= 0) &
@@ -111,6 +110,26 @@
 
   ! synchronizes MPI processes
   call synchronize_all()
+
+  ! warns if a Stacey absorbing boundary lies on the axis (r = 0), where the cylindrical
+  ! metric makes the damping contribution vanish and the axis stays a symmetry boundary
+  if (STACEY_ABSORBING_CONDITIONS) then
+    do ispecabs = 1,num_abs_boundary_faces
+      if (codeabs(IEDGE4,ispecabs)) then
+        ispec = abs_boundary_ispec(ispecabs)
+        on_axis = .true.
+        do j = 1,NGLLZ
+          if (abs(coord(1,ibool(1,j,ispec))) > TINYVAL) on_axis = .false.
+        enddo
+        if (on_axis) then
+          print *, '***** WARNING *****'
+          print *, 'Axisymmetry: absorbing boundary face ',ispecabs,' is on the axis (r = 0),'
+          print *, '             where Stacey has no effect; the axis remains a symmetry boundary.'
+          print *
+        endif
+      endif
+    enddo
+  endif
 
   ! VTK file output for visualization
   if (SAVE_MESH_FILES) then

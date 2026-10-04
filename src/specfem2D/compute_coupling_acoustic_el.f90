@@ -182,11 +182,13 @@
       if (AXISYM) then
 ! axial elements are always rotated by the mesher to make sure it is their i == 1 edge that is on the axis
 ! and thus the case of an edge located along j == constant does not need to be considered here
-        if (is_on_the_axis(ispec_acoustic) .and. i == 1) then
-          xxi = + gammaz(i,j,ispec_acoustic) * jacobian(i,j,ispec_acoustic)
-          r_xiplus1(i,j) = xxi
-        else if (is_on_the_axis(ispec_acoustic)) then
-          r_xiplus1(i,j) = coord(1,iglob)/(xiglj(i)+ONE)
+        if (is_on_the_axis(ispec_acoustic)) then
+          if (i == 1) then
+            xxi = + gammaz(i,j,ispec_acoustic) * jacobian(i,j,ispec_acoustic)
+            r_xiplus1(i,j) = xxi
+          else
+            r_xiplus1(i,j) = coord(1,iglob) / (xiglj(i) + ONE)
+          endif
         endif
       endif
 
@@ -197,14 +199,13 @@
         nx = - zxi / jacobian1D
         nz = + xxi / jacobian1D
 
+        weight = jacobian1D * wxgll(i)
         if (AXISYM) then
           if (is_on_the_axis(ispec_acoustic)) then
-             weight = jacobian1D * wxglj(i) * r_xiplus1(i,j)
+            weight = jacobian1D * wxglj(i) * r_xiplus1(i,j)
           else
-             weight = jacobian1D * wxgll(i) * coord(1,iglob)
+            weight = weight * coord(1,iglob)
           endif
-        else
-          weight = jacobian1D * wxgll(i)
         endif
 
       else if (iedge_acoustic == IBOTTOM) then
@@ -214,14 +215,13 @@
         nx = + zxi / jacobian1D
         nz = - xxi / jacobian1D
 
+        weight = jacobian1D * wxgll(i)
         if (AXISYM) then
           if (is_on_the_axis(ispec_acoustic)) then
             weight = jacobian1D * wxglj(i) * r_xiplus1(i,j)
           else
-            weight = jacobian1D * wxgll(i) * coord(1,iglob)
+            weight = weight * coord(1,iglob)
           endif
-        else
-          weight = jacobian1D * wxgll(i)
         endif
 
       else if (iedge_acoustic == ILEFT) then
@@ -231,14 +231,13 @@
         nx = - zgamma / jacobian1D
         nz = + xgamma / jacobian1D
 
+        weight = jacobian1D * wzgll(j)
         if (AXISYM) then
           if (is_on_the_axis(ispec_acoustic)) then
             call stop_the_code('error: rotated element detected on the symmetry axis, this should not happen')
           else
-            weight = jacobian1D * wzgll(j) * coord(1,ibool(i,j,ispec_acoustic))
+            weight = weight * coord(1,iglob)
           endif
-        else
-          weight = jacobian1D * wzgll(j)
         endif
 
       else if (iedge_acoustic == IRIGHT) then
@@ -248,14 +247,13 @@
         nx = + zgamma / jacobian1D
         nz = - xgamma / jacobian1D
 
+        weight = jacobian1D * wzgll(j)
         if (AXISYM) then
           if (is_on_the_axis(ispec_acoustic)) then
             call stop_the_code('error: rotated element detected on the symmetry axis, this should not happen')
           else
-            weight = jacobian1D * wzgll(j) * coord(1,ibool(i,j,ispec_acoustic))
+            weight = weight * coord(1,iglob)
           endif
-        else
-          weight = jacobian1D * wzgll(j)
         endif
       endif
 
@@ -337,11 +335,13 @@
       ! Blackwell Science, page 110, equation (4.60).
 
       if (AXISYM) then
-        if (is_on_the_axis(ispec_acoustic) .and. i == 1) then
-          xxi = + gammaz(i,j,ispec_acoustic) * jacobian(i,j,ispec_acoustic)
-          r_xiplus1(i,j) = xxi
-        else if (is_on_the_axis(ispec_acoustic)) then
-          r_xiplus1(i,j) = coord(1,iglob)/(xiglj(i)+ONE)
+        if (is_on_the_axis(ispec_acoustic)) then
+          if (i == 1) then
+            xxi = + gammaz(i,j,ispec_acoustic) * jacobian(i,j,ispec_acoustic)
+            r_xiplus1(i,j) = xxi
+          else
+            r_xiplus1(i,j) = coord(1,iglob)/(xiglj(i)+ONE)
+          endif
         endif
       endif
 
@@ -351,59 +351,62 @@
         jacobian1D = sqrt(xxi**2 + zxi**2)
         nx = - zxi / jacobian1D
         nz = + xxi / jacobian1D
+
+        weight = jacobian1D * wxgll(i)
         if (AXISYM) then
           if (is_on_the_axis(ispec_acoustic)) then
              weight = jacobian1D * wxglj(i) * r_xiplus1(i,j)
           else
-             weight = jacobian1D * wxgll(i) * coord(1,iglob)
+             weight = weight * coord(1,iglob)
           endif
-        else
-          weight = jacobian1D * wxgll(i)
         endif
+
       else if (iedge_acoustic == IBOTTOM) then
         xxi = + gammaz(i,j,ispec_acoustic) * jacobian(i,j,ispec_acoustic)
         zxi = - gammax(i,j,ispec_acoustic) * jacobian(i,j,ispec_acoustic)
         jacobian1D = sqrt(xxi**2 + zxi**2)
         nx = + zxi / jacobian1D
         nz = - xxi / jacobian1D
+
+        weight = jacobian1D * wxgll(i)
         if (AXISYM) then
           if (is_on_the_axis(ispec_acoustic)) then
             weight = jacobian1D * wxglj(i) * r_xiplus1(i,j)
           else
-            weight = jacobian1D * wxgll(i) * coord(1,iglob)
+            weight = weight * coord(1,iglob)
           endif
-        else
-          weight = jacobian1D * wxgll(i)
         endif
+
       else if (iedge_acoustic == ILEFT) then
         xgamma = - xiz(i,j,ispec_acoustic) * jacobian(i,j,ispec_acoustic)
         zgamma = + xix(i,j,ispec_acoustic) * jacobian(i,j,ispec_acoustic)
         jacobian1D = sqrt(xgamma**2 + zgamma**2)
         nx = - zgamma / jacobian1D
         nz = + xgamma / jacobian1D
+
+        weight = jacobian1D * wzgll(j)
         if (AXISYM) then
           if (is_on_the_axis(ispec_acoustic)) then
             call stop_the_code('error: rotated element detected on the symmetry axis, this should not happen')
           else
-            weight = jacobian1D * wzgll(j) * coord(1,ibool(i,j,ispec_acoustic))
+            weight = weight * coord(1,iglob)
           endif
-        else
-          weight = jacobian1D * wzgll(j)
         endif
+
       else if (iedge_acoustic == IRIGHT) then
         xgamma = - xiz(i,j,ispec_acoustic) * jacobian(i,j,ispec_acoustic)
         zgamma = + xix(i,j,ispec_acoustic) * jacobian(i,j,ispec_acoustic)
         jacobian1D = sqrt(xgamma**2 + zgamma**2)
         nx = + zgamma / jacobian1D
         nz = - xgamma / jacobian1D
+
+        weight = jacobian1D * wzgll(j)
         if (AXISYM) then
           if (is_on_the_axis(ispec_acoustic)) then
             call stop_the_code('error: rotated element detected on the symmetry axis, this should not happen')
           else
-            weight = jacobian1D * wzgll(j) * coord(1,ibool(i,j,ispec_acoustic))
+            weight = weight * coord(1,iglob)
           endif
-        else
-          weight = jacobian1D * wzgll(j)
         endif
       endif
 

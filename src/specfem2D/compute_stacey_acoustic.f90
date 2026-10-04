@@ -55,6 +55,9 @@
                          ATTENUATION_VISCOACOUSTIC,dot_e1, &
                          NO_BACKWARD_RECONSTRUCTION
 
+  ! axisymmetry
+  use specfem_par, only: AXISYM,is_on_the_axis,coord,xiglj,wxglj
+
   implicit none
 
   real(kind=CUSTOM_REAL), dimension(nglob),intent(inout) :: potential_dot_dot_acoustic
@@ -64,6 +67,7 @@
   integer :: ispecabs,ispec,i,j,iglob
   integer :: ibegin,iend,jbegin,jend
   real(kind=CUSTOM_REAL) :: weight,xxi,zxi,xgamma,zgamma,jacobian1D
+  real(kind=CUSTOM_REAL) :: r_xiplus1
   ! material properties of the acoustic medium
   real(kind=CUSTOM_REAL) :: rho_vp
 
@@ -90,12 +94,16 @@
           xgamma = - xiz(i,j,ispec) * jacobian(i,j,ispec)
           zgamma = + xix(i,j,ispec) * jacobian(i,j,ispec)
           jacobian1D = sqrt(xgamma ** 2 + zgamma ** 2)
+
           weight = jacobian1D * wzgll(j)
+          ! axisymmetry: adds cylindrical metric factor r to the boundary integral
+          if (AXISYM) weight = weight * coord(1,iglob)
 
           ! adds absorbing boundary contribution
           potential_dot_dot_acoustic(iglob) = potential_dot_dot_acoustic(iglob) - potential_dot_acoustic(iglob) * weight/rho_vp
+
           if (ATTENUATION_VISCOACOUSTIC .and. .not. USE_A_STRONG_FORMULATION_FOR_E1) &
-                   dot_e1(iglob,:) = dot_e1(iglob,:) - potential_dot_acoustic(iglob) * weight/rho_vp
+            dot_e1(iglob,:) = dot_e1(iglob,:) - potential_dot_acoustic(iglob) * weight/rho_vp
 
           if (SAVE_FORWARD) then
             ! saves contribution
@@ -116,12 +124,16 @@
           xgamma = - xiz(i,j,ispec) * jacobian(i,j,ispec)
           zgamma = + xix(i,j,ispec) * jacobian(i,j,ispec)
           jacobian1D = sqrt(xgamma ** 2 + zgamma ** 2)
+
           weight = jacobian1D * wzgll(j)
+          ! axisymmetry: adds cylindrical metric factor r to the boundary integral
+          if (AXISYM) weight = weight * coord(1,iglob)
 
           ! adds absorbing boundary contribution
           potential_dot_dot_acoustic(iglob) = potential_dot_dot_acoustic(iglob) - potential_dot_acoustic(iglob) * weight/rho_vp
+
           if (ATTENUATION_VISCOACOUSTIC .and. .not. USE_A_STRONG_FORMULATION_FOR_E1) &
-                 dot_e1(iglob,:) = dot_e1(iglob,:) - potential_dot_acoustic(iglob) * weight/rho_vp
+            dot_e1(iglob,:) = dot_e1(iglob,:) - potential_dot_acoustic(iglob) * weight/rho_vp
 
           if (SAVE_FORWARD) then
             ! saves contribution
@@ -145,12 +157,29 @@
           xxi = + gammaz(i,j,ispec) * jacobian(i,j,ispec)
           zxi = - gammax(i,j,ispec) * jacobian(i,j,ispec)
           jacobian1D = sqrt(xxi ** 2 + zxi ** 2)
+
           weight = jacobian1D * wxgll(i)
+          ! axisymmetry: adds cylindrical metric factor r to the boundary integral,
+          if (AXISYM) then
+            ! using GLJ quadrature along the radius for elements on the axis
+            if (is_on_the_axis(ispec)) then
+              if (i == 1) then
+                ! first GLJ point: limit of r/(1+xi) at the axis
+                r_xiplus1 = + gammaz(i,j,ispec) * jacobian(i,j,ispec)
+              else
+                r_xiplus1 = coord(1,iglob) / (xiglj(i) + ONE)
+              endif
+              weight = jacobian1D * wxglj(i) * r_xiplus1
+            else
+              weight = weight * coord(1,iglob)
+            endif
+          endif
 
           ! adds absorbing boundary contribution
           potential_dot_dot_acoustic(iglob) = potential_dot_dot_acoustic(iglob) - potential_dot_acoustic(iglob) * weight/rho_vp
+
           if (ATTENUATION_VISCOACOUSTIC .and. .not. USE_A_STRONG_FORMULATION_FOR_E1) &
-             dot_e1(iglob,:) = dot_e1(iglob,:) - potential_dot_acoustic(iglob) * weight/rho_vp
+            dot_e1(iglob,:) = dot_e1(iglob,:) - potential_dot_acoustic(iglob) * weight/rho_vp
 
           if (SAVE_FORWARD) then
             ! saves contribution
@@ -174,12 +203,29 @@
           xxi = + gammaz(i,j,ispec) * jacobian(i,j,ispec)
           zxi = - gammax(i,j,ispec) * jacobian(i,j,ispec)
           jacobian1D = sqrt(xxi ** 2 + zxi ** 2)
+
           weight = jacobian1D * wxgll(i)
+          ! axisymmetry: adds cylindrical metric factor r to the boundary integral,
+          if (AXISYM) then
+            ! using GLJ quadrature along the radius for elements on the axis
+            if (is_on_the_axis(ispec)) then
+              if (i == 1) then
+                ! first GLJ point: limit of r/(1+xi) at the axis
+                r_xiplus1 = + gammaz(i,j,ispec) * jacobian(i,j,ispec)
+              else
+                r_xiplus1 = coord(1,iglob) / (xiglj(i) + ONE)
+              endif
+              weight = jacobian1D * wxglj(i) * r_xiplus1
+            else
+              weight = weight * coord(1,iglob)
+            endif
+          endif
 
           ! adds absorbing boundary contribution
           potential_dot_dot_acoustic(iglob) = potential_dot_dot_acoustic(iglob) - potential_dot_acoustic(iglob) * weight/rho_vp
+
           if (ATTENUATION_VISCOACOUSTIC .and. .not. USE_A_STRONG_FORMULATION_FOR_E1) &
-               dot_e1(iglob,:) = dot_e1(iglob,:) - potential_dot_acoustic(iglob) * weight/rho_vp
+            dot_e1(iglob,:) = dot_e1(iglob,:) - potential_dot_acoustic(iglob) * weight/rho_vp
 
           if (SAVE_FORWARD .and. (.not. NO_BACKWARD_RECONSTRUCTION)) then
             ! saves contribution

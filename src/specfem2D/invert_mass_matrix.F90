@@ -180,7 +180,7 @@
             else if (region_CPML(ispec) == CPML_Z_ONLY) then
               if (AXISYM) then
                 if (is_on_the_axis(ispec)) then
-                  if (is_on_the_axis(ispec) .and. i == 1) then ! First GLJ point
+                  if (i == 1) then ! First GLJ point
                     xxi = + gammaz(i,j,ispec) * jacobian(i,j,ispec)
                     rmass_inverse_elastic(1,iglob) = rmass_inverse_elastic(1,iglob) &
                        + xxi*wxglj(i)*wzgll(j)*rhol*jacobian(i,j,ispec) * (K_z_store(i,j,ispec_PML))
@@ -229,7 +229,7 @@
               else if (region_CPML(ispec) == CPML_Z_ONLY) then
                 if (AXISYM) then
                   if (is_on_the_axis(ispec)) then
-                    if (is_on_the_axis(ispec) .and. i == 1) then ! First GLJ point
+                    if (i == 1) then ! First GLJ point
                       xxi = + gammaz(i,j,ispec) * jacobian(i,j,ispec)
                       rmass_inverse_elastic(1,iglob) = rmass_inverse_elastic(1,iglob) &
                          + xxi*wxglj(i)*wzgll(j)*rhol*jacobian(i,j,ispec) * (d_z_store(i,j,ispec_PML)* deltatover2)
@@ -254,7 +254,7 @@
             ! elastic no PML
             if (AXISYM) then
               if (is_on_the_axis(ispec)) then
-                if (is_on_the_axis(ispec) .and. i == 1) then
+                if (i == 1) then
                   ! First GLJ point
                   xxi = + gammaz(i,j,ispec) * jacobian(i,j,ispec)
                   rmass_inverse_elastic(1,iglob) = rmass_inverse_elastic(1,iglob) &
@@ -312,7 +312,7 @@
             else if (region_CPML(ispec) == CPML_Z_ONLY) then
               if (AXISYM) then
                 if (is_on_the_axis(ispec)) then
-                  if (is_on_the_axis(ispec) .and. i == 1) then ! First GLJ point
+                  if (i == 1) then ! First GLJ point
                     xxi = + gammaz(i,j,ispec) * jacobian(i,j,ispec)
                     rmass_inverse_acoustic(iglob) = rmass_inverse_acoustic(iglob) &
                           + xxi*wxglj(i)*wzgll(j)/ kappal_relaxed*jacobian(i,j,ispec) &
@@ -364,7 +364,7 @@
               else if (region_CPML(ispec) == CPML_Z_ONLY) then
                 if (AXISYM) then
                   if (is_on_the_axis(ispec)) then
-                    if (is_on_the_axis(ispec) .and. i == 1) then ! First GLJ point
+                    if (i == 1) then ! First GLJ point
                       xxi = + gammaz(i,j,ispec) * jacobian(i,j,ispec)
                       rmass_inverse_acoustic(iglob) = rmass_inverse_acoustic(iglob) &
                          + xxi*wxglj(i)*wzgll(j)/kappal_relaxed*jacobian(i,j,ispec) &
@@ -392,7 +392,7 @@
             ! acoustic no PML
             if (AXISYM) then
               if (is_on_the_axis(ispec)) then
-                if (is_on_the_axis(ispec) .and. i == 1) then
+                if (i == 1) then
                   ! First GLJ point
                   xxi = + gammaz(i,j,ispec) * jacobian(i,j,ispec)
                   rmass_inverse_acoustic(iglob) = rmass_inverse_acoustic(iglob) &
@@ -567,6 +567,8 @@
                          time_stepping_scheme,P_SV,STACEY_ABSORBING_CONDITIONS,ATTENUATION_PERMITTIVITY,ATTENUATION_CONDUCTIVITY, &
                          Qe11_electromagnetic,Qe33_electromagnetic,Qs11_electromagnetic,Qs33_electromagnetic,f0_electromagnetic
 
+  ! axisymmetry
+  use specfem_par, only: AXISYM,is_on_the_axis,coord,xiglj,wxglj
 
   implicit none
 
@@ -577,8 +579,9 @@
   real(kind=CUSTOM_REAL) :: rho_vp,rho_vs
   real(kind=CUSTOM_REAL) :: nx,nz,vx,vy,vz,vn,tx,ty,tz
   real(kind=CUSTOM_REAL) :: weight,xxi,zxi,xgamma,zgamma,jacobian1D
+  real(kind=CUSTOM_REAL) :: r_xiplus1
 
- ! electromagnetic parameters
+  ! electromagnetic parameters
   double precision :: permlxx,permlzz,condlxx,condlzz,two_inv_magpermeability
   double precision :: cpxsquare,cpzsquare
   double precision, dimension(2):: econdl,eperml
@@ -619,6 +622,8 @@
             nz = + xgamma / jacobian1D
 
             weight = jacobian1D * wzgll(j)
+            ! axisymmetry: adds cylindrical metric factor r to the boundary integral
+            if (AXISYM) weight = weight * coord(1,iglob)
 
             ! Clayton-Engquist condition if elastic
             if (P_SV) then
@@ -663,6 +668,8 @@
             nz = - xgamma / jacobian1D
 
             weight = jacobian1D * wzgll(j)
+            ! axisymmetry: adds cylindrical metric factor r to the boundary integral
+            if (AXISYM) weight = weight * coord(1,iglob)
 
             ! Clayton-Engquist condition if elastic
             if (P_SV) then
@@ -709,6 +716,22 @@
             nz = - xxi / jacobian1D
 
             weight = jacobian1D * wxgll(i)
+            ! axisymmetry: adds cylindrical metric factor r to the boundary integral
+            if (AXISYM) then
+              ! using GLJ quadrature along the radius for elements on the axis
+              if (is_on_the_axis(ispec)) then
+                ! axial elements are always rotated by the mesher to make sure it is their i == 1 edge that is on the axis
+                if (i == 1) then
+                  ! first GLJ point: limit of r/(1+xi) at the axis
+                  r_xiplus1 = + gammaz(i,j,ispec) * jacobian(i,j,ispec)
+                else
+                  r_xiplus1 = coord(1,iglob) / (xiglj(i) + ONE)
+                endif
+                weight = jacobian1D * wxglj(i) * r_xiplus1
+              else
+                weight = weight * coord(1,iglob)
+              endif
+            endif
 
             ! Clayton-Engquist condition if elastic
             if (P_SV) then
@@ -755,6 +778,22 @@
             nz = + xxi / jacobian1D
 
             weight = jacobian1D * wxgll(i)
+            ! axisymmetry: adds cylindrical metric factor r to the boundary integral
+            if (AXISYM) then
+              ! using GLJ quadrature along the radius for elements on the axis
+              if (is_on_the_axis(ispec)) then
+                ! axial elements are always rotated by the mesher to make sure it is their i == 1 edge that is on the axis
+                if (i == 1) then
+                  ! first GLJ point: limit of r/(1+xi) at the axis
+                  r_xiplus1 = + gammaz(i,j,ispec) * jacobian(i,j,ispec)
+                else
+                  r_xiplus1 = coord(1,iglob) / (xiglj(i) + ONE)
+                endif
+                weight = jacobian1D * wxglj(i) * r_xiplus1
+              else
+                weight = weight * coord(1,iglob)
+              endif
+            endif
 
             ! Clayton-Engquist condition if elastic
             if (P_SV) then
@@ -806,7 +845,10 @@
             xgamma = - xiz(i,j,ispec) * jacobian(i,j,ispec)
             zgamma = + xix(i,j,ispec) * jacobian(i,j,ispec)
             jacobian1D = sqrt(xgamma**2 + zgamma**2)
+
             weight = jacobian1D * wzgll(j)
+            ! axisymmetry: adds cylindrical metric factor r to the boundary integral
+            if (AXISYM) weight = weight * coord(1,iglob)
 
             rmass_inverse_acoustic(iglob) = rmass_inverse_acoustic(iglob) + deltatover2*weight/rho_vp
           enddo
@@ -824,7 +866,10 @@
             xgamma = - xiz(i,j,ispec) * jacobian(i,j,ispec)
             zgamma = + xix(i,j,ispec) * jacobian(i,j,ispec)
             jacobian1D = sqrt(xgamma**2 + zgamma**2)
+
             weight = jacobian1D * wzgll(j)
+            ! axisymmetry: adds cylindrical metric factor r to the boundary integral
+            if (AXISYM) weight = weight * coord(1,iglob)
 
             rmass_inverse_acoustic(iglob) = rmass_inverse_acoustic(iglob) + deltatover2*weight/rho_vp
           enddo
@@ -845,7 +890,23 @@
             xxi = + gammaz(i,j,ispec) * jacobian(i,j,ispec)
             zxi = - gammax(i,j,ispec) * jacobian(i,j,ispec)
             jacobian1D = sqrt(xxi**2 + zxi**2)
+
             weight = jacobian1D * wxgll(i)
+            ! axisymmetry: adds cylindrical metric factor r to the boundary integral,
+            if (AXISYM) then
+              ! using GLJ quadrature along the radius for elements on the axis
+              if (is_on_the_axis(ispec)) then
+                if (i == 1) then
+                  ! first GLJ point: limit of r/(1+xi) at the axis
+                  r_xiplus1 = + gammaz(i,j,ispec) * jacobian(i,j,ispec)
+                else
+                  r_xiplus1 = coord(1,iglob) / (xiglj(i) + ONE)
+                endif
+                weight = jacobian1D * wxglj(i) * r_xiplus1
+              else
+                weight = weight * coord(1,iglob)
+              endif
+            endif
 
             rmass_inverse_acoustic(iglob) = rmass_inverse_acoustic(iglob) + deltatover2*weight/rho_vp
           enddo
@@ -866,7 +927,23 @@
             xxi = + gammaz(i,j,ispec) * jacobian(i,j,ispec)
             zxi = - gammax(i,j,ispec) * jacobian(i,j,ispec)
             jacobian1D = sqrt(xxi**2 + zxi**2)
+
             weight = jacobian1D * wxgll(i)
+            ! axisymmetry: adds cylindrical metric factor r to the boundary integral,
+            if (AXISYM) then
+              ! using GLJ quadrature along the radius for elements on the axis
+              if (is_on_the_axis(ispec)) then
+                if (i == 1) then
+                  ! first GLJ point: limit of r/(1+xi) at the axis
+                  r_xiplus1 = + gammaz(i,j,ispec) * jacobian(i,j,ispec)
+                else
+                  r_xiplus1 = coord(1,iglob) / (xiglj(i) + ONE)
+                endif
+                weight = jacobian1D * wxglj(i) * r_xiplus1
+              else
+                weight = weight * coord(1,iglob)
+              endif
+            endif
 
             rmass_inverse_acoustic(iglob) = rmass_inverse_acoustic(iglob) + deltatover2*weight/rho_vp
           enddo
@@ -1129,19 +1206,18 @@
         zxi = - gammax(i,j,ispec) * jacobian(i,j,ispec)
         jacobian1D = sqrt(xxi**2 + zxi**2)
 
+        weight = dble(jacobian1D * wxgll(i))
         if (AXISYM) then
           if (is_on_the_axis(ispec)) then
             if (i == 1) then
               r_xiplus1 = + gammaz(i,j,ispec) * jacobian(i,j,ispec)
             else
-              r_xiplus1 = real(coord(1,iglob) / (xiglj(i) + ONE), kind=CUSTOM_REAL)
+              r_xiplus1 = coord(1,iglob) / (xiglj(i) + ONE)
             endif
             weight = dble(jacobian1D * wxglj(i) * r_xiplus1)
           else
-            weight = dble(jacobian1D * wxgll(i) * coord(1,iglob))
+            weight = weight * coord(1,iglob)
           endif
-        else
-          weight = dble(jacobian1D * wxgll(i))
         endif
 
         rhol = dble(rhostore(i,j,ispec))
@@ -1167,11 +1243,8 @@
         zgamma = + xix(i,j,ispec) * jacobian(i,j,ispec)
         jacobian1D = sqrt(xgamma**2 + zgamma**2)
 
-        if (AXISYM) then
-          weight = dble(jacobian1D * wzgll(j) * coord(1,iglob))
-        else
-          weight = dble(jacobian1D * wzgll(j))
-        endif
+        weight = dble(jacobian1D * wzgll(j))
+        if (AXISYM) weight = weight * coord(1,iglob)
 
         rhol = dble(rhostore(i,j,ispec))
         if (rhol <= 0.d0) call exit_MPI(myrank,'zero density on acoustic free surface')

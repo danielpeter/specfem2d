@@ -125,8 +125,10 @@
           duz_dxl(i,j,ispec) = duz_dxi*xixl + duz_dgamma*gammaxl
           duz_dzl(i,j,ispec) = duz_dxi*xizl + duz_dgamma*gammazl
 
-          if (AXISYM .and. is_on_the_axis(ispec) .and. i == 1) then ! d_uz/dr=0 on the axis
-            duz_dxl(i,j,ispec) = 0.d0
+          if (AXISYM) then
+            if (is_on_the_axis(ispec) .and. i == 1) then ! d_uz/dr=0 on the axis
+              duz_dxl(i,j,ispec) = 0.d0
+            endif
           endif
 
         enddo

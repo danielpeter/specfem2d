@@ -180,12 +180,10 @@
 
           ! AXISYM case overwrite duz_dxl
           if (AXISYM) then
-            if (is_on_the_axis(ispec)) then
+            if (is_on_the_axis(ispec) .and. i == 1) then
               ! d_uz/dr=0 on the axis
-              if (i == 1) then
-                duz_dxl = 0._CUSTOM_REAL
-                b_duz_dxl = 0._CUSTOM_REAL
-              endif
+              duz_dxl = 0._CUSTOM_REAL
+              b_duz_dxl = 0._CUSTOM_REAL
             endif
           endif
 
@@ -381,12 +379,10 @@
 
             ! AXISYM case overwrite dux_dxl
             if (AXISYM) then
-              if (is_on_the_axis(ispec)) then
+              if (is_on_the_axis(ispec) .and. i == 1) then
                 ! dchi/dr=rho * u_r=0 on the axis
-                if (i == 1) then
-                  accel_loc(1) = 0._CUSTOM_REAL
-                  b_displ_loc(1) = 0._CUSTOM_REAL
-                endif
+                accel_loc(1) = 0._CUSTOM_REAL
+                b_displ_loc(1) = 0._CUSTOM_REAL
               endif
             endif
 

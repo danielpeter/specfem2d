@@ -130,8 +130,10 @@
         dux_dxl = dux_dxi * xixl + dux_dgamma * gammaxl
         dux_dzl = dux_dxi * xizl + dux_dgamma * gammazl
 
-        if (AXISYM .and. is_on_the_axis(ispec) .and. i == 1) then ! dchi/dr=rho * u_r=0 on the axis
-          dux_dxl = ZERO
+        if (AXISYM) then
+          if (is_on_the_axis(ispec) .and. i == 1) then ! dchi/dr=rho * u_r=0 on the axis
+            dux_dxl = ZERO
+          endif
         endif
 
         ! gets density
@@ -139,11 +141,13 @@
         jacobianl = jacobian(i,j,ispec)
 
         if (AXISYM) then
-          if (is_on_the_axis(ispec) .and. i == 1) then
-            xxi = + gammaz(i,j,ispec) * jacobian(i,j,ispec)
-            r_xiplus1(i,j) = xxi
-          else if (is_on_the_axis(ispec)) then
-            r_xiplus1(i,j) = coord(1,ibool(i,j,ispec))/(xiglj(i)+ONE)
+          if (is_on_the_axis(ispec)) then
+            if (i == 1) then
+              xxi = + gammaz(i,j,ispec) * jacobian(i,j,ispec)
+              r_xiplus1(i,j) = xxi
+            else
+              r_xiplus1(i,j) = coord(1,ibool(i,j,ispec))/(xiglj(i)+ONE)
+            endif
           endif
         endif
 

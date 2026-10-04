@@ -67,6 +67,9 @@
 
   use specfem_par, only: displ_elastic,hprime_xx,hprime_zz
 
+  ! axisymmetry
+  use specfem_par, only: AXISYM,is_on_the_axis,coord,xiglj,wxglj
+
   implicit none
 
   real(kind=CUSTOM_REAL), dimension(NDIM,nglob),intent(inout) :: accel_elastic
@@ -75,6 +78,7 @@
   ! local parameters
   integer :: ispecabs,ispec,i,j,k,iglob,iiglob
   real(kind=CUSTOM_REAL) :: weight,xxi,zxi,xgamma,zgamma,jacobian1D
+  real(kind=CUSTOM_REAL) :: r_xiplus1
   real(kind=CUSTOM_REAL) :: nx,nz,vx,vy,vz,vn,tx,ty,tz
   real(kind=CUSTOM_REAL) :: dn,dx_n,dz_n,dx_t,dz_t,tx_n,tz_n,tx_t,tz_t
   real(kind=CUSTOM_REAL) :: unit_tx,unit_tz,v_norm
@@ -316,6 +320,8 @@
         endif
 
         weight = jacobian1D * wzgll(j)
+        ! axisymmetry: adds cylindrical metric factor r to the boundary integral
+        if (AXISYM) weight = weight * coord(1,iglob)
 
         if (P_SV) then
           ! P_SV case
@@ -531,6 +537,8 @@
         endif
 
         weight = jacobian1D * wzgll(j)
+        ! axisymmetry: adds cylindrical metric factor r to the boundary integral
+        if (AXISYM) weight = weight * coord(1,iglob)
 
         if (P_SV) then
           ! P_SV case
@@ -755,6 +763,22 @@
         endif
 
         weight = jacobian1D * wxgll(i)
+        ! axisymmetry: adds cylindrical metric factor r to the boundary integral,
+        if (AXISYM) then
+          ! using GLJ quadrature along the radius for elements on the axis
+          if (is_on_the_axis(ispec)) then
+            ! axial elements are always rotated by the mesher to make sure it is their i == 1 edge that is on the axis
+            if (i == 1) then
+              ! first GLJ point: limit of r/(1+xi) at the axis
+              r_xiplus1 = + gammaz(i,j,ispec) * jacobian(i,j,ispec)
+            else
+              r_xiplus1 = coord(1,iglob) / (xiglj(i) + ONE)
+            endif
+            weight = jacobian1D * wxglj(i) * r_xiplus1
+          else
+            weight = weight * coord(1,iglob)
+          endif
+        endif
 
         if (P_SV) then
           ! P_SV case
@@ -973,6 +997,22 @@
         endif
 
         weight = jacobian1D * wxgll(i)
+        ! axisymmetry: adds cylindrical metric factor r to the boundary integral,
+        if (AXISYM) then
+          ! using GLJ quadrature along the radius for elements on the axis
+          if (is_on_the_axis(ispec)) then
+            ! axial elements are always rotated by the mesher to make sure it is their i == 1 edge that is on the axis
+            if (i == 1) then
+              ! first GLJ point: limit of r/(1+xi) at the axis
+              r_xiplus1 = + gammaz(i,j,ispec) * jacobian(i,j,ispec)
+            else
+              r_xiplus1 = coord(1,iglob) / (xiglj(i) + ONE)
+            endif
+            weight = jacobian1D * wxglj(i) * r_xiplus1
+          else
+            weight = weight * coord(1,iglob)
+          endif
+        endif
 
         if (P_SV) then
           ! P_SV case
