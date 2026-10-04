@@ -1441,14 +1441,14 @@
       call stop_the_code('RK and LDDRK time scheme not supported for poroelastic simulations with attenuation')
     if (GRAVITY) &
       call stop_the_code('GRAVITY not supported for poroelastic simulations')
-    if (GPU) &
+    if (GPU_MODE) &
       call stop_the_code('poroelastic not implemented in GPU MODE yet')
   endif
 
   if (ELECTROMAGNETIC_SIMULATION) then
     if (GRAVITY) &
       call stop_the_code('GRAVITY not supported for electromagnetic simulations')
-    if (GPU) &
+    if (GPU_MODE) &
       call stop_the_code('electromagnetic not implemented in GPU MODE yet')
   endif
 
