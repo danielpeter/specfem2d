@@ -53,6 +53,10 @@
                          ispec_selected_source,islice_selected_source,iglob_source, &
                          xi_source,gamma_source
 
+#ifndef WITH_MPI
+  use constants, only: OUTPUT_FILES
+#endif
+
   implicit none
   ! local parameters
   integer :: i_source
@@ -136,6 +140,22 @@
     endif
 
   enddo  ! NSOURCES
+
+!! DK DK this below not supported in the case of MPI yet, we should do a MPI_GATHER() of the values
+!! DK DK and use "if (myrank == islice_selected_rec(irec)) then" to display the right sources
+!! DK DK and receivers carried by each mesh slice, and not fictitious values coming from other slices
+#ifndef WITH_MPI
+  if (myrank == 0) then
+     ! write actual source locations to file
+     ! note that these may differ from input values, especially if source_surf = .true. in SOURCE
+     ! note that the exact source locations are determined from (ispec,xi,gamma) values
+     open(unit=14,file=trim(OUTPUT_FILES)//'for_information_SOURCE_actually_used',status='unknown')
+     do i_source = 1,NSOURCES
+        write(14,*) x_source(i_source), z_source(i_source)
+     enddo
+     close(14)
+  endif
+#endif
 
   ! user output
   if (myrank == 0) then

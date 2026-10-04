@@ -72,11 +72,7 @@
 
   subroutine setup_sources()
 
-  use constants, only: myrank,NGLLX,NGLLZ,NDIM,IMAIN,IIN,CUSTOM_REAL, &
-#ifndef WITH_MPI
-     OUTPUT_FILES, &
-#endif
-     MAX_STRING_LEN
+  use constants, only: myrank,NGLLX,NGLLZ,NDIM,IMAIN,IIN,CUSTOM_REAL,MAX_STRING_LEN
 
   use specfem_par, only: NSOURCES,x_source,z_source,vx_source,vz_source, &
                          xi_source,gamma_source, &
@@ -187,22 +183,6 @@
 
   ! locates sources
   call locate_sources()
-
-!! DK DK this below not supported in the case of MPI yet, we should do a MPI_GATHER() of the values
-!! DK DK and use "if (myrank == islice_selected_rec(irec)) then" to display the right sources
-!! DK DK and receivers carried by each mesh slice, and not fictitious values coming from other slices
-#ifndef WITH_MPI
-  if (myrank == 0) then
-     ! write actual source locations to file
-     ! note that these may differ from input values, especially if source_surf = .true. in SOURCE
-     ! note that the exact source locations are determined from (ispec,xi,gamma) values
-     open(unit=14,file=trim(OUTPUT_FILES)//'for_information_SOURCE_actually_used',status='unknown')
-     do i_source= 1,NSOURCES
-        write(14,*) x_source(i_source), z_source(i_source)
-     enddo
-     close(14)
-  endif
-#endif
 
   ! synchronizes all processes
   call synchronize_all()
