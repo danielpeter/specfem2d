@@ -1175,16 +1175,13 @@ subroutine setup_source_interpolation_moving(xi_source, gamma_source, sourcearra
   sourcearray(:,:,:) = 0._CUSTOM_REAL
 
   ! Lagrange interpolators
+  call lagrange_any(xi_source,NGLLX,xigll,hxis,hpxis)
+  call lagrange_any(gamma_source,NGLLZ,zigll,hgammas,hpgammas)
   if (AXISYM) then
     if (is_on_the_axis(ispec_source)) then
       call lagrange_any(xi_source,NGLJ,xiglj,hxis,hpxis)
-    else
-      call lagrange_any(xi_source,NGLLX,xigll,hxis,hpxis)
     endif
-  else
-    call lagrange_any(xi_source,NGLLX,xigll,hxis,hpxis)
   endif
-  call lagrange_any(gamma_source,NGLLZ,zigll,hgammas,hpgammas)
 
   ! computes source arrays
   if (this_source_type == 1) then

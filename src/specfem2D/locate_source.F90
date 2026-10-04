@@ -334,16 +334,13 @@
     ! ****************************************
 
     ! use initial guess in xi and gamma
+    xi = xigll(ix_initial_guess)
+    gamma = zigll(iz_initial_guess)
     if (AXISYM) then
       if (is_on_the_axis(ispec)) then
         xi = xiglj(ix_initial_guess)
-      else
-        xi = xigll(ix_initial_guess)
       endif
-    else
-      xi = xigll(ix_initial_guess)
     endif
-    gamma = zigll(iz_initial_guess)
 
     ! iterate to solve the nonlinear system
     if (USE_BEST_LOCATION_FOR_SOURCE) then

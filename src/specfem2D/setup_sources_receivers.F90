@@ -895,19 +895,17 @@
       ispec = ispec_selected_source(i_source)
 
       ! Lagrange interpolators
+      call lagrange_any(xi_source(i_source),NGLLX,xigll,hxis,hpxis)
+      call lagrange_any(gamma_source(i_source),NGLLZ,zigll,hgammas,hpgammas)
+
       if (AXISYM) then
         if (is_on_the_axis(ispec)) then
           call lagrange_any(xi_source(i_source),NGLJ,xiglj,hxis,hpxis)
           !do j = 1,NGLJ ! ABAB same result with that loop, this is good
           !  hxis(j) = hglj(j-1,xi_source(i_source),xiglj,NGLJ)
           !enddo
-        else
-          call lagrange_any(xi_source(i_source),NGLLX,xigll,hxis,hpxis)
         endif
-      else
-        call lagrange_any(xi_source(i_source),NGLLX,xigll,hxis,hpxis)
       endif
-      call lagrange_any(gamma_source(i_source),NGLLZ,zigll,hgammas,hpgammas)
 
       ! computes source arrays
       sourcearray(:,:,:) = 0._CUSTOM_REAL
@@ -918,26 +916,40 @@
         call compute_arrays_source_forcesolution(ispec,hxis,hgammas,sourcearray,anglesource(i_source))
       case (2)
         ! moment-tensor source
-        ! checks source
-        if (ispec_is_acoustic(ispec)) then
-          call exit_MPI(myrank,'cannot have moment tensor source in acoustic element')
+        ! check for axisymmetric simulations
+        if (AXISYM) then
+          ! checks CMT is an explosion (Mxx==Mzz, Mxz=0) for axisymmetric simulations
+          if (abs(Mxx(i_source) - Mzz(i_source)) > TINYVAL .or. abs(Mxz(i_source)) > TINYVAL) then
+            call exit_MPI(myrank,'AXISYM only supports an explosive CMT (Mxx == Mzz, Mxz = 0) for now')
+          endif
         endif
+
         ! checks wave type
+        if (ispec_is_acoustic(ispec)) then
+          if (.not. P_SV ) call exit_MPI(myrank,'cannot have moment tensor source in SH (membrane) waves calculation')
+        endif
         if (ispec_is_elastic(ispec)) then
           if (.not. P_SV ) call exit_MPI(myrank,'cannot have moment tensor source in SH (membrane) waves calculation')
         endif
         if (ispec_is_electromagnetic(ispec)) then
           if (.not. P_SV ) call exit_MPI(myrank,'cannot have moment tensor source in SH (membrane) waves calculation')
         endif
-        ! checks CMT is an explosion (Mxx==Mzz, Mxz=0) for axisymmetric simulations
-        if (AXISYM) then
-          if (abs(Mxx(i_source) - Mzz(i_source)) > TINYVAL .or. abs(Mxz(i_source)) > TINYVAL) &
-            call exit_MPI(myrank,'AXISYM only supports an explosive CMT (Mxx == Mzz, Mxz = 0) for now')
-        endif
 
-        ! builds moment-tensor source array
-        call compute_arrays_source_cmt(ispec,hxis,hgammas,hpxis,hpgammas,sourcearray, &
-                                       Mxx(i_source),Mzz(i_source),Mxz(i_source),xix,xiz,gammax,gammaz,nspec)
+        ! checks acoustic source
+        if (ispec_is_acoustic(ispec)) then
+          ! CMT must be an explosion (Mxx==Mzz, Mxz=0) for acoustic simulation
+          if (abs(Mxx(i_source) - Mzz(i_source)) > TINYVAL .or. abs(Mxz(i_source)) > TINYVAL) then
+            call exit_MPI(myrank, &
+              'moment tensor source in acoustic elements only supports an explosive CMT (Mxx == Mzz, Mxz = 0) for now')
+          endif
+          ! CMT source is treated the same as the force point (acts as pressure source in all directions);
+          ! angle is ignored for acoustic elements
+          call compute_arrays_source_forcesolution(ispec,hxis,hgammas,sourcearray,anglesource(i_source))
+        else
+          ! builds moment-tensor source array
+          call compute_arrays_source_cmt(ispec,hxis,hgammas,hpxis,hpgammas,sourcearray, &
+                                         Mxx(i_source),Mzz(i_source),Mxz(i_source),xix,xiz,gammax,gammaz,nspec)
+        endif
       end select
 
       ! adding Axisymmetric source factor for monopole sources
@@ -994,7 +1006,18 @@
   do irec = 1,nrec
     if (myrank == islice_selected_rec(irec)) then
       ispec = ispec_selected_rec(irec)
+
       ! Lagrange interpolators
+      !do j = 1,NGLLX !do j = 1,NGLJ ! ABAB Exactly same result with that loop. This is good
+      !  hxir2(j) = hgll(j-1,xi_receiver(irec),xigll,NGLLX)
+      !  print *,hxir(j),' = ',hxir2(j)
+      !enddo
+      ! Defined:
+      !  double precision, dimension(NGLL) :: hxir2
+      !  double precision, external :: hglj,hgll
+      call lagrange_any(xi_receiver(irec),NGLLX,xigll,hxir,hpxir)
+      call lagrange_any(gamma_receiver(irec),NGLLZ,zigll,hgammar,hpgammar)
+
       if (AXISYM) then
         if (is_on_the_axis(ispec)) then
           call lagrange_any(xi_receiver(irec),NGLJ,xiglj,hxir,hpxir)
@@ -1002,20 +1025,8 @@
           !  hxir2(j) = hglj(j-1,xi_receiver(irec),xiglj,NGLJ)
           !  print *,hxir(j),' = ',hxir2(j)
           !enddo
-        else
-          call lagrange_any(xi_receiver(irec),NGLLX,xigll,hxir,hpxir)
         endif
-      else
-        call lagrange_any(xi_receiver(irec),NGLLX,xigll,hxir,hpxir)
-        !do j = 1,NGLLX !do j = 1,NGLJ ! ABAB Exactly same result with that loop. This is good
-        !  hxir2(j) = hgll(j-1,xi_receiver(irec),xigll,NGLLX)
-        !  print *,hxir(j),' = ',hxir2(j)
-        !enddo
-        ! Defined:
-        !  double precision, dimension(NGLL) :: hxir2
-        !  double precision, external :: hglj,hgll
       endif
-      call lagrange_any(gamma_receiver(irec),NGLLZ,zigll,hgammar,hpgammar)
 
       ! local receivers in this slice
       irec_local = irec_local + 1

@@ -38,7 +38,7 @@
   use constants, only: CUSTOM_REAL,NGLLX,NGLLZ,myrank
 
   use specfem_par, only: ispec_is_acoustic,nglob_acoustic, &
-                         NSOURCES,source_type,source_time_function,sourcearrays, &
+                         NSOURCES,source_time_function,sourcearrays, &
                          islice_selected_source,ispec_selected_source,ibool,kappastore
   implicit none
 
@@ -66,22 +66,19 @@
         !       the sign is negative because pressure p = - Chi_dot_dot therefore we need
         !       to add minus the source to Chi_dot_dot to get plus the source in pressure
 
+        ! note: CMT sources in acoustic elements can only be explosions (Mxx == Mzz, Mxz == 0);
+        !       these become then the same as force point sources (acts like a pressure source in all directions)
+
         ! collocated force
-        if (source_type(i_source) == 1) then
-          ! forward wavefield
-          do j = 1,NGLLZ
-            do i = 1,NGLLX
-              iglob = ibool(i,j,ispec)
+        ! forward wavefield
+        do j = 1,NGLLZ
+          do i = 1,NGLLX
+            iglob = ibool(i,j,ispec)
 
-              potential_dot_dot_acoustic(iglob) = potential_dot_dot_acoustic(iglob) &
-                                                - sourcearrays(1,i,j,i_source) * stf_used / kappastore(i,j,ispec)
-            enddo
+            potential_dot_dot_acoustic(iglob) = potential_dot_dot_acoustic(iglob) &
+                                              - sourcearrays(1,i,j,i_source) * stf_used / kappastore(i,j,ispec)
           enddo
-
-        else if (source_type(i_source) == 2) then
-          ! moment tensor
-          call exit_MPI(myrank,'cannot have moment tensor source in acoustic element')
-        endif
+        enddo
 
       endif
     endif ! if this processor core carries the source and the source element is acoustic
@@ -209,14 +206,11 @@
         ! computes source arrays
         sourcearray(:,:,:) = 0._CUSTOM_REAL
 
-        select case (source_type(i_source))
-        case (1)
-          ! collocated force source
-          call compute_arrays_source_forcesolution(ispec,hxis,hgammas,sourcearray,anglesource(i_source))
-        case (2)
-          ! moment-tensor source
-          call exit_MPI(myrank,'Cannot have moment tensor source in acoustic element')
-        end select
+        ! note: CMT sources in acoustic elements can only be explosions (Mxx == Mzz, Mxz == 0);
+        !       these become then the same as force point sources (acts like a pressure source in all directions)
+
+        ! collocated source
+        call compute_arrays_source_forcesolution(ispec,hxis,hgammas,sourcearray,anglesource(i_source))
 
         ! stores sourcearray for all sources
         sourcearrays(:,:,:,i_source) = sourcearray(:,:,:)
@@ -243,17 +237,15 @@
         !       to add minus the source to Chi_dot_dot to get plus the source in pressure
 
         ! collocated force
-        if (source_type(i_source) == 1) then
-          ! forward wavefield
-          do j = 1,NGLLZ
-            do i = 1,NGLLX
-              iglob = ibool(i,j,ispec)
+        ! forward wavefield
+        do j = 1,NGLLZ
+          do i = 1,NGLLX
+            iglob = ibool(i,j,ispec)
 
-              potential_dot_dot_acoustic(iglob) = potential_dot_dot_acoustic(iglob) &
-                                                - sourcearrays(1,i,j,i_source) * stf_used / kappastore(i,j,ispec)
-            enddo
+            potential_dot_dot_acoustic(iglob) = potential_dot_dot_acoustic(iglob) &
+                                              - sourcearrays(1,i,j,i_source) * stf_used / kappastore(i,j,ispec)
           enddo
-        endif
+        enddo
       endif
     endif ! if this processor core carries the source and the source element is acoustic
   enddo ! do i_source= 1,NSOURCES

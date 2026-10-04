@@ -207,16 +207,13 @@
   do ispec = 1,nspec
     do j = 1,NGLLZ
       do i = 1,NGLLX
+        xi = xigll(i)
+        gamma = zigll(j)
         if (AXISYM) then
           if (is_on_the_axis(ispec)) then
             xi = xiglj(i)
-          else
-            xi = xigll(i)
           endif
-        else
-          xi = xigll(i)
         endif
-        gamma = zigll(j)
 
         call recompute_jacobian_with_negative_stop(xi,gamma,x,z,xixl,xizl,gammaxl,gammazl,jacobianl, &
                                                    coorg,knods,ispec,NGNOD,nspec,npgeo, &
@@ -252,16 +249,13 @@
     do ispec = 1,nspec
       do j = 1,NGLLZ
         do i = 1,NGLLX
+          xi = xigll(i)
+          gamma = zigll(j)
           if (AXISYM) then
             if (is_on_the_axis(ispec)) then
               xi = xiglj(i)
-            else
-              xi = xigll(i)
             endif
-          else
-            xi = xigll(i)
           endif
-          gamma = zigll(j)
 
           call recompute_jacobian_with_negative_stop(xi,gamma,x,z,xixl,xizl,gammaxl,gammazl,jacobianl, &
                                                      coorg,knods,ispec,NGNOD,nspec,npgeo, &

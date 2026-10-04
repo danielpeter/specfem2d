@@ -563,16 +563,13 @@
   endif
 
   ! Lagrange interpolators over GLL points
+  call lagrange_any(xi_noise,NGLLX,xigll,hxi,hpxi)
+  call lagrange_any(gamma_noise,NGLLZ,zigll,hgamma,hpgamma)
   if (AXISYM) then
     if (is_on_the_axis(ispec_noise)) then
       call lagrange_any(xi_noise,NGLJ,xiglj,hxi,hpxi)
-    else
-      call lagrange_any(xi_noise,NGLLX,xigll,hxi,hpxi)
     endif
-  else
-    call lagrange_any(xi_noise,NGLLX,xigll,hxi,hpxi)
   endif
-  call lagrange_any(gamma_noise,NGLLZ,zigll,hgamma,hpgamma)
 
   ! main station for noise source: located in element ispec_noise
   noise_sourcearray(:,:,:,:) = 0._CUSTOM_REAL
