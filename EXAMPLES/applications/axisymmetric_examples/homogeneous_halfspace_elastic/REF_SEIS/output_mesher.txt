@@ -1,0 +1,170 @@
+
+ **********************************************
+ *** Specfem 2-D Mesher - MPI version       ***
+ **********************************************
+
+ Running Git version of the code corresponding to unknown
+ dating unknown
+
+ Reading the parameter file...
+
+ Title of the simulation: Lamb's problem P-SV elastic
+
+ Axisymmetric simulation
+
+   using existing STATIONS file: ./DATA/STATIONS
+   file name is ./DATA/STATIONS
+   found            4  receivers
+
+ Parameter file successfully read 
+
+
+ Mesh from internal meshing:
+   Materials:
+   Nb of solid, fluid or porous materials =            1
+
+ --------
+ Material #           1  isotropic
+ rho,cp,cs   =    2300.0000000000000        2800.0000000000000        1500.0000000000000     
+ Qkappa, Qmu =    9999.0000000000000        9999.0000000000000     
+ Material is solid
+ --------
+
+ Reading interface data from file: ./DATA/interfaces.dat
+ Reading            2  points for interface            1
+ Reading            2  points for interface            2
+
+ Total number of layers in z direction =            1
+ There are           60  spectral elements along Z in layer            1
+
+ Total number of spectral elements along X =           80
+ Total number of spectral elements along Z =           60
+
+ Regions:
+   Nb of regions in the mesh =            1
+
+ ------
+ Region            1
+ IX from            1  to           80
+ IZ from            1  to           60
+ Material #            1  isotropic
+ Material is solid
+ vp     =    2800.00000    
+ vs     =    1500.00000    
+ rho    =    2300.00000    
+ Poisson's ratio =   0.298747778    
+ QKappa =    9999.00000    
+ Qmu    =    9999.00000    
+ ------
+
+ creating mesh from internal meshing:
+   Total number of spectral elements         =         4800
+
+ PML mesh elements:
+   Total number of PML elements =            0
+
+ The mesh contains         4800  elements
+
+ Control elements have            4  nodes
+
+ Reading in SOURCE file...
+
+ Source           1
+   Position xs, zs =    0.0000000000000000        0.0000000000000000     
+
+   Source type:            1
+   (1=force, 2=moment tensor)
+
+   Force source:
+   Angle of the source (deg) =    180.00000000000000     
+
+   Time function type:           1
+   ( 0=Normalized Gaussian,  1=Ricker,          2=First derivative,  3=Gaussian,        4=Dirac,
+     5=Heaviside,            6=Ocean type I,    7=Ocean type II,     8=Read from file,  9=Burst,
+    10=Sinusoidal,          11=Ormsby,         12=Brune,            13=Smoothed Brune, 14=Yoffe,
+    15=Integrated Yoffe )
+   Ricker wavelet (second-derivative):
+   Frequency, delay   =   0.10000000000000001        0.0000000000000000     
+   Multiplying factor =    10000000000.000000     
+
+ all sources are okay
+
+ Normals to surface not needed
+
+ Node coordinates:
+
+ reading node coordinates from interfaces...
+
+ Mesh surfaces:
+   determining acoustic free surface...
+   number of acoustic elements with free surface =            0
+
+   determining absorbing boundary surfaces...
+   number of elements with absorbing boundaries =          140
+
+ Axisymmetric mesh:
+
+ Axial elements:           60
+
+
+ Mesh dimensions: 
+   Min and max value of X in the grid =    0.0000000000000000        67000.000000000000     
+   Min and max value of Z in the grid =   -60000.000000000000        0.0000000000000000     
+
+ checking mesh elements for invalid Jacobians...
+   number of elements:         4800
+   NGNOD             :            4
+   AXISYM            :  T
+   all elements have valid Jacobians
+
+ Mesh partitioning:
+   decomposing mesh using NPROC =            2
+
+ Graph construction:
+   graph adjacency done
+
+ ************ Computing elements load ************
+ Number of elastic elements :        4800
+ Number of acoustic elements :           0
+ Number of viscoelastic elements :           0
+ Number of viscoacoustic elements :           0
+ Number of elastic PML elements :           0
+ Number of acoustic PML elements :           0
+ Number of viscoelastic PML elements :           0
+ Number of viscoacoustic PML elements :           0
+ *************************************************
+
+
+ Partitioning type: SCOTCH
+
+ Coupled interfaces:
+   nedges_coupled (acoustic/elastic)     =            0
+   nedges_coupled (acoustic/poroelastic) =            0
+   nedges_coupled (poroelastic/elastic)  =            0
+
+ Local numbering:
+   NPROC:            2
+   number of elements:         4800
+
+ decompose mesh all done
+
+ Absorbing boundaries:
+   nedge_bound   :          140
+   nelemabs_merge:          140
+
+ Saving databases:
+   database file: ./OUTPUT_FILES/Database00000.bin
+   slice            0  has number of spectral elements =        2400
+
+   database file: ./OUTPUT_FILES/Database00001.bin
+   slice            1  has number of spectral elements =        2400
+
+   VTK mesh files:
+   written file: ./OUTPUT_FILES//mesh_materials.vtk
+   written file: ./OUTPUT_FILES//mesh_partition_number.vtk
+   written file: ./OUTPUT_FILES//mesh_axial_elements.vtk
+   done
+
+
+ This will be a parallel simulation on            2  processor cores
+
