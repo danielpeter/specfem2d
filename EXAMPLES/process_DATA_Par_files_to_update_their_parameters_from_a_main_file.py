@@ -59,6 +59,8 @@ EXCLUDE_DIR_LIST = [ \
 # optional parameters in Par_file
 OPTIONAL_PARAMETERS = [
   #"IS_WAVEFIELD_DISCONTINUITY"
+  "GRAVITY", \
+  "GRAVITY_CONST"
 ]
 
 #
