@@ -156,6 +156,10 @@
         case (15)
           write(IMAIN,*) '    Integrated Regularized Yoffe - T_acc,T_eff = ', &
                          1.d0/f0_source(i_source),',',1.d0/burst_band_width(i_source),' s'
+        case (16)
+          write(IMAIN,*) '    Kuepper wavelet - rise time = ',1.d0/f0_source(i_source),' s'
+        case (17)
+          write(IMAIN,*) '    Integrated Kuepper wavelet - rise time = ',1.d0/f0_source(i_source),' s'
         end select
         write(IMAIN,*)
         call flush_IMAIN()

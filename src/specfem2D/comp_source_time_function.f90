@@ -1042,3 +1042,162 @@ contains
   comp_source_time_function_Yoffe_integrated = integrated_val
 
   end function comp_source_time_function_Yoffe_integrated
+
+!
+!------------------------------------------------------------
+!
+
+  double precision function comp_source_time_function_Kuepper_integrated(t,f0)
+
+! integrated Kuepper wavelet using Simpson's rule
+
+  use constants, only: PI
+
+  use shared_parameters, only: DT
+
+  implicit none
+
+  double precision, intent(in) :: t,f0
+
+  ! local variables
+  double precision :: T_rise
+  double precision :: integrated_val
+  integer :: n_steps, i
+  double precision :: dt_step, t_current, stf_val
+  ! external function
+  double precision, external :: comp_source_time_function_Kuepper
+
+! note: The single-cycle Kuepper wavelet is a moment-rate (or slip rate or slip velocity) function
+!       (see also the comments below about references).
+!
+!       Here, we provide the moment function that is the integral from 0 to t of the Kuepper wavelet.
+!       This is thus the moment (or cummulative slip) function that applies to CMT sources.
+!
+!       Integration is done numerically using Simpson's 1/3 rule.
+
+  ! defined only for times t > 0
+  if (t <= 0.d0) then
+    comp_source_time_function_Kuepper_integrated = 0.d0
+    return
+  endif
+
+  ! check input frequency
+  if (f0 <= 0.d0) then
+    call stop_the_code('Integrated Kuepper moment function requires a non-zero frequency f0')
+  endif
+
+  ! convert input frequency parameter to rise time
+  T_rise = 1.d0 / f0
+
+  ! determine integration parameters (must be even for Simpson's rule)
+  n_steps = max(100, int(t / (T_rise * 0.01d0)))
+  n_steps = max(n_steps, int(t / DT))         ! to double-check enough fine stepping in case T_rise is large
+
+  ! ensure even number
+  if (mod(n_steps, 2) == 1) n_steps = n_steps + 1
+  dt_step = t / dble(n_steps)
+
+  ! Simpson's rule integration
+  integrated_val = 0.d0
+
+  ! first point
+  stf_val = 0.d0  ! or comp_source_time_function_Kuepper(0.d0, f0)
+                  !    integrated_val = integrated_val + stf_val
+
+  ! intermediate points
+  do i = 1, n_steps - 1
+    ! current time
+    t_current = dble(i) * dt_step
+
+    ! evaluate Kuepper wavelet
+    stf_val = comp_source_time_function_Kuepper(t_current,f0)
+
+    ! integrate
+    if (mod(i, 2) == 1) then
+      ! odd indices
+      integrated_val = integrated_val + 4.d0 * stf_val
+    else
+      ! even indices
+      integrated_val = integrated_val + 2.d0 * stf_val
+    endif
+  enddo
+
+  ! last point
+  stf_val = comp_source_time_function_Kuepper(t,f0)
+  integrated_val = integrated_val + stf_val
+
+  ! apply Simpson's rule factor
+  integrated_val = integrated_val * dt_step / 3.d0
+
+  ! returns integrated source time function value
+  comp_source_time_function_Kuepper_integrated = integrated_val
+
+  end function comp_source_time_function_Kuepper_integrated
+
+!
+!------------------------------------------------------------
+!
+
+  double precision function comp_source_time_function_Kuepper(t,f0)
+
+! single-cycle Kuepper wavelet - moment-rate function
+!
+! references:
+!       Kuepper's original work (1958),
+!       "Theoretische Untersuchung über die Mehrfachaufstellung von Geophonen",
+!       https://doi.org/10.1111/j.1365-2478.1958.tb01652.x
+!
+!       Mavroeidis and Papageorgiou (2003),
+!       "A mathematical representation of near-fault ground motions",
+!       https://doi.org/10.1785/0120020100
+!
+!       definition of the single-cycle Kuepper wavelet:
+!       moment-rate function:
+!         \dot{M}(t) = (9 \pi M_0 / 16 T_0) [ sin( \pi t / T_0) - 1/3 sin( 3 \pi t / T_0) ]     for 0 <= t <= T_0
+!
+!       using trigonometric identity sin^3(x) = 3/4 sin(x) - 1/4 sin(3 x) becomes:
+!         \dot{M}(t) = (3 \pi M_0 / 4 T_0) sin^3( \pi t / T_0)
+!
+!       this moment-rate function is also used by:
+!       - OpenSWPC (https://github.com/OpenSWPC/OpenSWPC),
+!         Maeda et al. (2017),
+!         "OpenSWPC: an open-source integrated parallel simulation code for modeling seismic wave propagation
+!         in 3D heterogeneous viscoelastic media",
+!         https://doi.org/10.1186/s40623-017-0687-2
+!       - Someya et al. (2024),
+!         "2D FDM Simulation of Seismic Waves and Tsunamis Based on Improved Coupling Equations Under Gravity",
+!         https://doi.org/10.1007/s00024-024-03468-2
+!       - Hou et al. (2026),
+!         "Spectral element simulation of the earthquake–tsunami coupling and bathymetry effects on oceanic wavefields",
+!         https://doi.org/10.1093/gji/ggag228
+
+  use constants, only: PI
+
+  implicit none
+
+  double precision, intent(in) :: t,f0
+
+  ! local variables
+  double precision :: T_rise,norm,val
+
+  ! check input rise time
+  if (f0 <= 0.d0) then
+    call stop_the_code('Kuepper moment-rate function requires a non-zero frequency f0')
+  endif
+
+  ! convert input frequency parameter to rise time
+  T_rise = 1.d0 / f0
+
+  ! single-cycle Kuepper wavelet (normalized)
+  if ( t >= 0.d0 .and. t <= T_rise) then
+    ! normalization factor
+    norm = 3.d0 * PI / (4.d0 * T_rise)
+    ! wavelet value
+    val = norm * (sin(PI * t / T_rise))**3
+  else
+    val = 0.d0
+  end if
+
+  comp_source_time_function_Kuepper = val
+
+  end function comp_source_time_function_Kuepper

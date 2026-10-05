@@ -70,6 +70,8 @@
   double precision, external :: comp_source_time_function_burst,comp_source_time_function_d2burst
   double precision, external :: comp_source_time_function_Brune,comp_source_time_function_Smooth_Brune
   double precision, external :: comp_source_time_function_Yoffe,comp_source_time_function_Yoffe_integrated
+  double precision, external :: comp_source_time_function_Kuepper,comp_source_time_function_Kuepper_integrated
+
   ! user output
   if (myrank == 0) then
     write(IMAIN,*)
@@ -328,6 +330,16 @@
             ! Frequency parameter        -> T_acc == 1/f0  (acceleration duration)
             ! burst band width parameter -> T_eff == 1/bbw (effective duration)
             stf = comp_source_time_function_Yoffe_integrated(t_used,f0,burst_band_width(isource))
+
+          case (16)
+            ! Kuepper wavelet
+            ! Frequency parameter        -> T_rise == 1/f0  (rise time)
+            stf = comp_source_time_function_Kuepper(t_used,f0)
+
+          case (17)
+            ! Integrated Kuepper wavelet
+            ! Frequency parameter        -> T_rise == 1/f0  (rise time)
+            stf = comp_source_time_function_Kuepper_integrated(t_used,f0)
 
           case default
             call exit_MPI(myrank,'unknown source time function')

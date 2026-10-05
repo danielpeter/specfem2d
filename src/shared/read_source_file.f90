@@ -300,81 +300,112 @@
 
       ! STF
       write(IMAIN,*) '  Time function type:',time_function_type(i_source)
-      write(IMAIN,*) '  ( 0=Normalized Gaussian,  1=Ricker,          2=First derivative,  3=Gaussian,        4=Dirac,'
-      write(IMAIN,*) '    5=Heaviside,            6=Ocean type I,    7=Ocean type II,     8=Read from file,  9=Burst,'
-      write(IMAIN,*) '   10=Sinusoidal,          11=Ormsby,         12=Brune,            13=Smoothed Brune, 14=Yoffe,'
-      write(IMAIN,*) '   15=Integrated Yoffe )'
+      write(IMAIN,*) '  ( 0=Normalized Gaussian |  1=Ricker       |  2=First derivative   |  3=Gaussian       |  4=Dirac |'
+      write(IMAIN,*) '    5=Heaviside           |  6=Ocean type I |  7=Ocean type II      |  8=Read from file |  9=Burst |'
+      write(IMAIN,*) '   10=Sinusoidal          | 11=Ormsby       | 12=Brune              | 13=Smoothed Brune | 14=Yoffe |'
+      write(IMAIN,*) '   15=Integrated Yoffe    | 16=Kuepper      | 17=Integrated Kuepper | )'
+      write(IMAIN,*)
 
       select case (time_function_type(i_source))
       case (0)
         write(IMAIN,*) '  Normalized Gaussian:'
-        write(IMAIN,*) '  Frequency = ',f0_source(i_source), &
+        write(IMAIN,*) '    frequency = ',f0_source(i_source), &
                        ' (half-duration = ',sngl(1.d0/f0_source(i_source)),' s)'
         if (f0_source(i_source) == f0_sampling) write(IMAIN,*) '  (Frequency limited by sampling rate DT ',sngl(DT),' s)'
-        write(IMAIN,*) '  delay     = ',tshift_src(i_source)
+        write(IMAIN,*) '    delay     = ',tshift_src(i_source)
+
       case (1)
         write(IMAIN,*) '  Ricker wavelet (second-derivative):'
-        write(IMAIN,*) '  Frequency, delay   = ',f0_source(i_source),tshift_src(i_source)
+        write(IMAIN,*) '    frequency, delay   = ',f0_source(i_source),tshift_src(i_source)
+
       case (2)
         write(IMAIN,*) '  Ricker wavelet (first-derivative):'
-        write(IMAIN,*) '  Frequency, delay   = ',f0_source(i_source),tshift_src(i_source)
+        write(IMAIN,*) '    frequency, delay   = ',f0_source(i_source),tshift_src(i_source)
+
       case (3)
         write(IMAIN,*) '  Gaussian:'
-        write(IMAIN,*) '  Frequency, delay   = ',f0_source(i_source),tshift_src(i_source)
+        write(IMAIN,*) '    frequency, delay   = ',f0_source(i_source),tshift_src(i_source)
+
       case (4)
         write(IMAIN,*) '  Dirac:'
-        write(IMAIN,*) '  Frequency, delay   = ',f0_source(i_source),tshift_src(i_source)
+        write(IMAIN,*) '    frequency, delay   = ',f0_source(i_source),tshift_src(i_source)
         if (f0_source(i_source) == f0_sampling) write(IMAIN,*) '  (Frequency limited by sampling rate DT ',sngl(DT),' s)'
+
       case (5)
         write(IMAIN,*) '  Heaviside:'
-        write(IMAIN,*) '  Frequency, delay   = ',f0_source(i_source),tshift_src(i_source)
+        write(IMAIN,*) '    frequency, delay   = ',f0_source(i_source),tshift_src(i_source)
         if (f0_source(i_source) == f0_sampling) write(IMAIN,*) '  (Frequency limited by sampling rate DT ',sngl(DT),' s)'
+
       case (6)
         write(IMAIN,*) '  Ocean acoustics (type I):'
-        write(IMAIN,*) '  Frequency, delay   = ',f0_source(i_source),tshift_src(i_source)
+        write(IMAIN,*) '    frequency, delay   = ',f0_source(i_source),tshift_src(i_source)
+
       case (7)
         write(IMAIN,*) '  Ocean acoustics (type II):'
-        write(IMAIN,*) '  Frequency, delay   = ',f0_source(i_source),tshift_src(i_source)
+        write(IMAIN,*) '    frequency, delay   = ',f0_source(i_source),tshift_src(i_source)
+
       case (8)
         write(IMAIN,*) '  External source time function file:'
-        write(IMAIN,*) '  Source read from file: ',trim(name_of_source_file(i_source))
+        write(IMAIN,*) '    source read from file: ',trim(name_of_source_file(i_source))
+
       case (9)
         write(IMAIN,*) '  Burst wavelet:'
-        write(IMAIN,*) '  Burst band width   = ',burst_band_width(i_source)
+        write(IMAIN,*) '    burst band width   = ',burst_band_width(i_source)
+
       case (10)
         write(IMAIN,*) '  Sinusoidal source time function:'
-        write(IMAIN,*) '  Frequency, delay   = ',f0_source(i_source),tshift_src(i_source)
+        write(IMAIN,*) '    frequency, delay   = ',f0_source(i_source),tshift_src(i_source)
+
       case (11)
         write(IMAIN,*) '  Ormsby source time function:'
-        write(IMAIN,*) '  Frequency, delay   = ',f0_source(i_source),tshift_src(i_source)
+        write(IMAIN,*) '    frequency, delay   = ',f0_source(i_source),tshift_src(i_source)
+
       case (12)
         write(IMAIN,*) '  Brune source time function'
-        write(IMAIN,*) '  Frequency = ',f0_source(i_source), &
+        write(IMAIN,*) '    frequency = ',f0_source(i_source), &
                        ' (rise time = ',sngl(1.d0/f0_source(i_source)),' s)'
-        write(IMAIN,*) '  delay     = ',tshift_src(i_source)
+        write(IMAIN,*) '    delay     = ',tshift_src(i_source)
+
       case (13)
         write(IMAIN,*) '  Smoothed Brune source time function'
-        write(IMAIN,*) '  Frequency = ',f0_source(i_source), &
+        write(IMAIN,*) '    frequency = ',f0_source(i_source), &
                        ' (rise time = ',sngl(1.d0/f0_source(i_source)),' s)'
-        write(IMAIN,*) '  delay     = ',tshift_src(i_source)
+        write(IMAIN,*) '    delay     = ',tshift_src(i_source)
+
       case (14)
         write(IMAIN,*) '  Regularized Yoffe:'
-        write(IMAIN,*) '  Frequency        = ',f0_source(i_source), &
+        write(IMAIN,*) '    frequency        = ',f0_source(i_source), &
                        ' (slip acceleration duration: T_acc = ',sngl(1.d0/f0_source(i_source)),' s)'
-        write(IMAIN,*) '  burst band width = ',burst_band_width(i_source), &
+        write(IMAIN,*) '    burst band width = ',burst_band_width(i_source), &
                        ' (effective final duration  : T_eff = ',sngl(1.d0/burst_band_width(i_source)),' s)'
-        write(IMAIN,*) '  delay            = ',tshift_src(i_source)
+        write(IMAIN,*) '    delay            = ',tshift_src(i_source)
+
       case (15)
         write(IMAIN,*) '  Integrated Regularized Yoffe:'
-        write(IMAIN,*) '  Frequency        = ',f0_source(i_source), &
+        write(IMAIN,*) '    frequency        = ',f0_source(i_source), &
                        ' (slip acceleration duration: T_acc = ',sngl(1.d0/f0_source(i_source)),' s)'
-        write(IMAIN,*) '  burst band width = ',burst_band_width(i_source), &
+        write(IMAIN,*) '    burst band width = ',burst_band_width(i_source), &
                        ' (effective final duration  : T_eff = ',sngl(1.d0/burst_band_width(i_source)),' s)'
-        write(IMAIN,*) '  delay            = ',tshift_src(i_source)
+        write(IMAIN,*) '    delay            = ',tshift_src(i_source)
+
+      case (16)
+        write(IMAIN,*) '  Kuepper wavelet:'
+        write(IMAIN,*) '    frequency        = ',f0_source(i_source), &
+                       ' (rise time = ',sngl(1.d0/f0_source(i_source)),' s)'
+        write(IMAIN,*) '    delay            = ',tshift_src(i_source)
+
+      case (17)
+        write(IMAIN,*) '  Integrated Kuepper wavelet:'
+        write(IMAIN,*) '    frequency        = ',f0_source(i_source), &
+                       ' (rise time = ',sngl(1.d0/f0_source(i_source)),' s)'
+        write(IMAIN,*) '    delay            = ',tshift_src(i_source)
+
       case default
         call stop_the_code('Error invalid source time function type! must be between 1 and 9, exiting...')
       end select
-      write(IMAIN,*) '  Multiplying factor = ',factor(i_source)
+
+      write(IMAIN,*)
+      write(IMAIN,'(1x,a,es12.4)') '  Multiplying factor = ',factor(i_source)
       write(IMAIN,*)
 
       ! check if external stf file exists
