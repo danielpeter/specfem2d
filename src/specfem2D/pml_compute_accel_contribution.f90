@@ -60,7 +60,7 @@
                 K_x_store,K_z_store,d_x_store,d_z_store,alpha_x_store,alpha_z_store
 
   ! for gravity
-  use specfem_par, only: GRAVITY,rmass_acoustic_free_surface_gravity
+  use specfem_par, only: GRAVITY,PML_acoustic_M_gravity
 
   implicit none
 
@@ -197,7 +197,7 @@
         !       no-gravity case.
         !
         ! stability work-around
-        weight = weight + rmass_acoustic_free_surface_gravity(iglob)
+        weight = weight + PML_acoustic_M_gravity(i,j,ispec_PML)
       endif
 
       potential_dot_dot_acoustic_PML(i,j) = weight * &

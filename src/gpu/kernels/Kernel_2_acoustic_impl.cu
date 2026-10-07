@@ -395,7 +395,7 @@ Kernel_2_acoustic_PML_impl(const int nb_blocks_to_compute,
                            realw* betaz_store,
                            const int gravity,
                            const realw gravity_const,
-                           realw* d_rmass_acoustic_free_surface_gravity){
+                           realw* d_PML_acoustic_M_gravity){
 
   // block-id == number of local element id in phase_ispec array
   int bx = blockIdx.y*gridDim.x+blockIdx.x;
@@ -765,7 +765,7 @@ Kernel_2_acoustic_PML_impl(const int nb_blocks_to_compute,
   // for gravity
   if (gravity){
     // adds M_g term for stabilization (since mass matrix has been modified for free surface nodes)
-    weight += d_rmass_acoustic_free_surface_gravity[iglob];
+    weight += d_PML_acoustic_M_gravity[offset_pml];
   }
 
   pml_contrib = weight * (A1 * potential_dot[iglob] + A2 * s_dummy_loc[tx] + A3 * r5 + A4 * r6);
@@ -1070,7 +1070,7 @@ template __global__ void Kernel_2_acoustic_PML_impl<1>(const int,const int*,cons
                                                        const realw*,int*,int,int,realw,
                                                        realw*,realw*,realw*,realw*,realw*,realw*,realw*,realw*,realw*,
                                                        realw_p,realw*,realw*,realw*,realw*,realw*,
-                                                       const int,const realw);
+                                                       const int,const realw,realw*);
 
 template __global__ void Kernel_2_acoustic_PML_impl<3>(const int,const int*,const int*,const int,const int,
                                                        realw_const_p,realw_p,
@@ -1079,7 +1079,7 @@ template __global__ void Kernel_2_acoustic_PML_impl<3>(const int,const int*,cons
                                                        const realw*,int*,int,int,realw,
                                                        realw*,realw*,realw*,realw*,realw*,realw*,realw*,realw*,realw*,
                                                        realw_p,realw*,realw*,realw*,realw*,realw*,
-                                                       const int,const realw);
+                                                       const int,const realw,realw*);
 
 template __global__ void Kernel_2_viscoacoustic_impl<1>(const int,const int*,const int*,const int,const int,
                                                         realw_const_p,realw_p,

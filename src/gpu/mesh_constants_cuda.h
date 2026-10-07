@@ -592,7 +592,7 @@ typedef struct mesh_ {
   realw* d_rmemory_pot_acoustic;
   realw* d_rmemory_pot_acoustic2;
 
-  realw* d_rmass_acoustic_free_surface_gravity;
+  realw* d_PML_acoustic_M_gravity;
 
   int pml_nglob_abs_acoustic;
   int* d_pml_abs_points_acoustic;

@@ -119,7 +119,7 @@
   deallocate(potential_acoustic,potential_acoustic_old)
   deallocate(potential_dot_acoustic,potential_dot_dot_acoustic)
   deallocate(rmass_inverse_acoustic)
-  if (allocated(rmass_acoustic_free_surface_gravity)) deallocate(rmass_acoustic_free_surface_gravity)
+  if (allocated(PML_acoustic_M_gravity)) deallocate(PML_acoustic_M_gravity)
   deallocate(b_potential_acoustic,b_potential_acoustic_old)
   if (.not. NO_BACKWARD_RECONSTRUCTION) then
     deallocate(b_potential_dot_acoustic,b_potential_dot_dot_acoustic)

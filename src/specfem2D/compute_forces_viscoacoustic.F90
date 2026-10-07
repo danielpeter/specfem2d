@@ -389,24 +389,28 @@
 
     ! attenuation
     if (ATTENUATION_VISCOACOUSTIC .and. (.not. USE_A_STRONG_FORMULATION_FOR_E1) .and. time_stepping_scheme > 1) then
-      iglob = ibool(i,j,ispec)
-      if (.not. iglob_is_forced(iglob)) then
-        dot_e1(iglob,:) = dot_e1(iglob,:) + sum_terms(i,j)
-      endif
+      do j = 1,NGLLZ
+        do i = 1,NGLLX
+          iglob = ibool(i,j,ispec)
+          if (.not. iglob_is_forced(iglob)) then
+            dot_e1(iglob,:) = dot_e1(iglob,:) + sum_terms(i,j)
+          endif
+        enddo
+      enddo
     endif
 
     if (ATTENUATION_VISCOACOUSTIC .and. USE_A_STRONG_FORMULATION_FOR_E1) then
-      iglob = ibool(i,j,ispec)
-      if (.not. iglob_is_forced(iglob)) then
-        do j = 1,NGLLZ
-          do i = 1,NGLLX
+      do j = 1,NGLLZ
+        do i = 1,NGLLX
+          iglob = ibool(i,j,ispec)
+          if (.not. iglob_is_forced(iglob)) then
             sum_forces = - sum_terms(i,j)  ! equal to term: + (wzgll(j) * temp1l + wxgll(i) * temp2l)
             call get_attenuation_forces_strong_form(sum_forces,sum_forces_old(i,j,ispec), &
                                                     forces_attenuation,i,j,ispec,iglob,e1_acous_sf)
             sum_terms(i,j) = sum_terms(i,j) - forces_attenuation
-          enddo
+          endif
         enddo
-      endif
+      enddo
     endif
 
 !! DK DK QUENTIN visco begin

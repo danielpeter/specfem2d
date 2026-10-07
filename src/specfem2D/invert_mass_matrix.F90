@@ -495,7 +495,7 @@
   endif
 
   ! adds acoustic gravity free surface contribution to mass matrix
-  if (any_acoustic .and. GRAVITY) then
+  if (GRAVITY) then
     call prepare_mass_matrix_acoustic_gravity()
   endif
 
@@ -1102,27 +1102,32 @@
 ! adds the linearized free-surface gravity contribution to the acoustic mass matrix
 
   use constants, only: IMAIN,CUSTOM_REAL,NGLLX,NGLLZ,ONE,ZERO,TINYVAL
-  use specfem_par, only: myrank,any_acoustic,ibool,nelem_acoustic_surface,acoustic_surface, &
+
+  use specfem_par, only: myrank,ibool, &
+                         nelem_acoustic_surface,acoustic_surface, &
                          rhostore,jacobian,xix,xiz,gammax,gammaz,wxgll,wzgll, &
-                         rmass_inverse_acoustic,rmass_acoustic_free_surface_gravity, &
+                         rmass_inverse_acoustic, &
                          ispec_is_acoustic, &
                          AXISYM,is_on_the_axis,coord,wxglj,xiglj, &
-                         PML_BOUNDARY_CONDITIONS,nglob
+                         ACOUSTIC_SIMULATION
+
+  use specfem_par, only: PML_BOUNDARY_CONDITIONS,ispec_is_PML,spec_to_PML, &
+                         PML_acoustic_M_gravity
 
   use shared_parameters, only: GRAVITY,GRAVITY_CONST
 
   implicit none
 
   ! local parameters
-  integer :: ispec_acoustic_surface,ispec,ixmin,ixmax,izmin,izmax
-  integer :: i,j,iglob,ier
+  integer :: ispec_acoustic_surface,ispec,ispec_PML
+  integer :: ixmin,ixmax,izmin,izmax
+  integer :: i,j,iglob
   double precision :: gravityl,rhol,weight,M_g
   real(kind=CUSTOM_REAL) :: xxi,zxi,xgamma,zgamma,jacobian1D,r_xiplus1
 
   ! checks if anything to do
-  if (.not. any_acoustic) return
   if (.not. GRAVITY) return
-  if (nelem_acoustic_surface == 0) return
+  if (.not. ACOUSTIC_SIMULATION) return
 
   ! user output
   if (myrank == 0) then
@@ -1132,16 +1137,13 @@
 
   ! check non-zero gravity
   gravityl = dabs(GRAVITY_CONST)
-  if (gravityl < TINYVAL) then
-    write(IMAIN,*) "  warning: using zero gravity"
-    call flush_IMAIN()
-  endif
 
-  ! stores free surface gravity contribution for PMLs
-  if (PML_BOUNDARY_CONDITIONS) then
-    allocate(rmass_acoustic_free_surface_gravity(nglob),stat=ier)
-    if (ier /= 0) call stop_the_code('Error allocating rmass for gravity contribution')
-    rmass_acoustic_free_surface_gravity(:) = 0.0_CUSTOM_REAL
+  ! user output
+  if (myrank == 0) then
+    if (gravityl < TINYVAL) then
+      write(IMAIN,*) "  warning: using zero gravity"
+      call flush_IMAIN()
+    endif
   endif
 
   ! loop over acoustic free surface elements
@@ -1205,8 +1207,12 @@
         rmass_inverse_acoustic(iglob) = rmass_inverse_acoustic(iglob) + real(M_g, kind=CUSTOM_REAL)
 
         ! stores contribution for PML
-        if (PML_BOUNDARY_CONDITIONS) &
-          rmass_acoustic_free_surface_gravity(iglob) = rmass_acoustic_free_surface_gravity(iglob) + real(M_g, kind=CUSTOM_REAL)
+        if (PML_BOUNDARY_CONDITIONS) then
+          if (ispec_is_PML(ispec)) then
+            ispec_PML = spec_to_PML(ispec)
+            PML_acoustic_M_gravity(i,j,ispec_PML) = real(M_g, kind=CUSTOM_REAL)
+          endif
+        endif
       enddo
 
     else if (ixmin == ixmax) then
@@ -1237,8 +1243,12 @@
         rmass_inverse_acoustic(iglob) = rmass_inverse_acoustic(iglob) + real(M_g, kind=CUSTOM_REAL)
 
         ! stores contribution for PML
-        if (PML_BOUNDARY_CONDITIONS) &
-          rmass_acoustic_free_surface_gravity(iglob) = rmass_acoustic_free_surface_gravity(iglob) + real(M_g, kind=CUSTOM_REAL)
+        if (PML_BOUNDARY_CONDITIONS) then
+          if (ispec_is_PML(ispec)) then
+            ispec_PML = spec_to_PML(ispec)
+            PML_acoustic_M_gravity(i,j,ispec_PML) = real(M_g, kind=CUSTOM_REAL)
+          endif
+        endif
       enddo
 
     endif

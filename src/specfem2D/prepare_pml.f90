@@ -419,6 +419,13 @@
       rmemory_acoustic_dux_dx_LDDRK(:,:,:,:) = 0._CUSTOM_REAL
       rmemory_acoustic_dux_dz_LDDRK(:,:,:,:) = 0._CUSTOM_REAL
 
+      ! acoustic PML + gravity
+      if (GRAVITY) then
+        ! stores free surface gravity contribution for PMLs
+        allocate(PML_acoustic_M_gravity(NGLLX,NGLLZ,nspec_PML),stat=ier)
+        if (ier /= 0) call stop_the_code('Error allocating PML_acoustic_M_gravity for gravity contribution')
+        PML_acoustic_M_gravity(:,:,:) = 0.0_CUSTOM_REAL
+      endif
     else
       ! dummy arrays
       allocate(rmemory_potential_acoustic(1,1,1,1))
@@ -480,6 +487,8 @@
     allocate(rmemory_fsb_displ_elastic_LDDRK(1,NDIM,NGLLX,NGLLZ,1))
   if (.not. allocated(rmemory_sfb_potential_ddot_acoustic_LDDRK)) &
     allocate(rmemory_sfb_potential_ddot_acoustic_LDDRK(1,NGLLX,NGLLZ,1))
+  if (.not. allocated(PML_acoustic_M_gravity)) &
+    allocate(PML_acoustic_M_gravity(1,1,1))
 
   ! done
   call synchronize_all()

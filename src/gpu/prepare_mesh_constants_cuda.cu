@@ -877,7 +877,7 @@ void FC_FUNC_(prepare_pml_device,
                                   int* ACOUSTIC_SIMULATION,
                                   realw* rhostore,
                                   int* h_num_fluid_solid_edges,
-                                  realw* rmass_acoustic_free_surface_gravity){
+                                  realw* PML_acoustic_M_gravity){
 
   TRACE("prepare_PML_device");
 
@@ -935,7 +935,7 @@ void FC_FUNC_(prepare_pml_device,
 
     // for gravity free surface
     if (mp->gravity) {
-      copy_todevice_realw((void**)&mp->d_rmass_acoustic_free_surface_gravity,rmass_acoustic_free_surface_gravity,mp->NGLOB_AB);
+      copy_todevice_realw((void**)&mp->d_PML_acoustic_M_gravity,PML_acoustic_M_gravity,size);
     }
   }
 
