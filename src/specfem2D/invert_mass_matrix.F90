@@ -1111,8 +1111,9 @@
                          AXISYM,is_on_the_axis,coord,wxglj,xiglj, &
                          ACOUSTIC_SIMULATION
 
-  use specfem_par, only: PML_BOUNDARY_CONDITIONS,ispec_is_PML,spec_to_PML, &
+  use specfem_par, only: PML_BOUNDARY_CONDITIONS,ispec_is_PML,spec_to_PML,region_CPML,K_x_store,K_z_store, &
                          PML_acoustic_M_gravity
+  use constants, only: CPML_X_ONLY,CPML_Z_ONLY,CPML_XZ
 
   use shared_parameters, only: GRAVITY,GRAVITY_CONST
 
@@ -1203,16 +1204,28 @@
           M_g = weight / (rhol * gravityl)
         endif
 
-        ! add M_g term to mass matrix
-        rmass_inverse_acoustic(iglob) = rmass_inverse_acoustic(iglob) + real(M_g, kind=CUSTOM_REAL)
-
         ! stores contribution for PML
         if (PML_BOUNDARY_CONDITIONS) then
           if (ispec_is_PML(ispec)) then
             ispec_PML = spec_to_PML(ispec)
-            PML_acoustic_M_gravity(i,j,ispec_PML) = real(M_g, kind=CUSTOM_REAL)
+
+            ! stores "pure" M_g contribution for PML routine `pml_compute_accel_contribution_acoustic()`
+            PML_acoustic_M_gravity(i,j,ispec_PML) = PML_acoustic_M_gravity(i,j,ispec_PML) + real(M_g, kind=CUSTOM_REAL)
+
+            ! adding PML scaling factor for mass matrix assembly
+            select case(region_CPML(ispec))
+            case (CPML_X_ONLY)
+              M_g = M_g * K_x_store(i,j,ispec_PML)
+            case (CPML_XZ)
+              M_g = M_g * K_x_store(i,j,ispec_PML) * K_z_store(i,j,ispec_PML)
+            case (CPML_Z_ONLY)
+              M_g = M_g * K_z_store(i,j,ispec_PML)
+            end select
           endif
         endif
+
+        ! add M_g term to mass matrix
+        rmass_inverse_acoustic(iglob) = rmass_inverse_acoustic(iglob) + real(M_g, kind=CUSTOM_REAL)
       enddo
 
     else if (ixmin == ixmax) then
@@ -1239,16 +1252,28 @@
           M_g = weight / (rhol * gravityl)
         endif
 
-        ! adds M_g term
-        rmass_inverse_acoustic(iglob) = rmass_inverse_acoustic(iglob) + real(M_g, kind=CUSTOM_REAL)
-
         ! stores contribution for PML
         if (PML_BOUNDARY_CONDITIONS) then
           if (ispec_is_PML(ispec)) then
             ispec_PML = spec_to_PML(ispec)
-            PML_acoustic_M_gravity(i,j,ispec_PML) = real(M_g, kind=CUSTOM_REAL)
+
+            ! stores "pure" M_g contribution for PML routine `pml_compute_accel_contribution_acoustic()`
+            PML_acoustic_M_gravity(i,j,ispec_PML) = PML_acoustic_M_gravity(i,j,ispec_PML) + real(M_g, kind=CUSTOM_REAL)
+
+            ! adding PML scaling factor for mass matrix assembly
+            select case(region_CPML(ispec))
+            case (CPML_X_ONLY)
+              M_g = M_g * K_x_store(i,j,ispec_PML)
+            case (CPML_XZ)
+              M_g = M_g * K_x_store(i,j,ispec_PML) * K_z_store(i,j,ispec_PML)
+            case (CPML_Z_ONLY)
+              M_g = M_g * K_z_store(i,j,ispec_PML)
+            end select
           endif
         endif
+
+        ! adds M_g term to mass matrix
+        rmass_inverse_acoustic(iglob) = rmass_inverse_acoustic(iglob) + real(M_g, kind=CUSTOM_REAL)
       enddo
 
     endif
