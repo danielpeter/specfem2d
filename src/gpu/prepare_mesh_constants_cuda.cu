@@ -876,7 +876,8 @@ void FC_FUNC_(prepare_pml_device,
                                   int* h_PML_abs_points_elastic,
                                   int* ACOUSTIC_SIMULATION,
                                   realw* rhostore,
-                                  int* h_num_fluid_solid_edges){
+                                  int* h_num_fluid_solid_edges,
+                                  realw* rmass_acoustic_free_surface_gravity){
 
   TRACE("prepare_PML_device");
 
@@ -931,6 +932,11 @@ void FC_FUNC_(prepare_pml_device,
     print_CUDA_error_if_any(cudaMemset(mp->d_rmemory_acoustic_dux_dz2,0,size_xz*sizeof(realw)),2007);
     print_CUDA_error_if_any(cudaMemset(mp->d_rmemory_pot_acoustic,0,size*sizeof(realw)),2007);
     print_CUDA_error_if_any(cudaMemset(mp->d_rmemory_pot_acoustic2,0,size_xz*sizeof(realw)),2007);
+
+    // for gravity free surface
+    if (mp->gravity) {
+      copy_todevice_realw((void**)&mp->d_rmass_acoustic_free_surface_gravity,rmass_acoustic_free_surface_gravity,mp->NGLOB_AB);
+    }
   }
 
   // elastic PML

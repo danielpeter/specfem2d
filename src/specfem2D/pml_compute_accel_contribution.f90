@@ -59,6 +59,9 @@
   use specfem_par, only: nspec_PML,ispec_is_PML,spec_to_PML,region_CPML, &
                 K_x_store,K_z_store,d_x_store,d_z_store,alpha_x_store,alpha_z_store
 
+  ! for gravity
+  use specfem_par, only: GRAVITY,rmass_acoustic_free_surface_gravity
+
   implicit none
 
   integer,intent(in) :: ispec
@@ -81,6 +84,7 @@
 
   ! material properties of the acoustic medium
   real(kind=CUSTOM_REAL) :: kappal,fac
+  real(kind=CUSTOM_REAL) :: weight
 
   ! checks if anything to do in this slice
   if (nspec_PML == 0) return
@@ -159,22 +163,47 @@
 
       if (AXISYM) then
         if (is_on_the_axis(ispec)) then
-          potential_dot_dot_acoustic_PML(i,j)= wxglj(i) * wzgll(j) * fac * r_xiplus1(i,j) * &
-                   (A1 * potential_dot_acoustic(iglob) + A2 * potential_acoustic(iglob) + &
-                    A3 * rmemory_potential_acoustic(1,i,j,ispec_PML) + &
-                    A4 * rmemory_potential_acoustic(2,i,j,ispec_PML))
+          weight = wxglj(i) * wzgll(j) * fac * r_xiplus1(i,j)
         else
-          potential_dot_dot_acoustic_PML(i,j)= wxgll(i) * wzgll(j) * fac * coord(1,ibool(i,j,ispec)) * &
-                   (A1 * potential_dot_acoustic(iglob) + A2 * potential_acoustic(iglob) + &
-                    A3 * rmemory_potential_acoustic(1,i,j,ispec_PML) + &
-                    A4 * rmemory_potential_acoustic(2,i,j,ispec_PML))
+          weight = wxgll(i) * wzgll(j) * fac * coord(1,ibool(i,j,ispec))
         endif
       else
-        potential_dot_dot_acoustic_PML(i,j)= wxgll(i) * wzgll(j) * fac * &
+        weight = wxgll(i) * wzgll(j) * fac
+      endif
+
+      ! for gravity
+      if (GRAVITY) then
+        ! note: Gravity modified the mass matrix for free surface nodes adding an M_g term:
+        !         M = M_V + M_C + M_g
+        !       The volume term M_V uses the same weights as the above parameter `weight`.
+        !       The term M_C is added for Newmark schemes.
+        !       The term M_g is added by gravity and dominates for surface nodes.
+        !       For example, in an oceanic layer
+        !         M_g ~ dx / (rho * G) while M_V ~ dx^2 / kappa.
+        !
+        !       Ignoring this M_g term in the weight factor here, would basically make the PML damping too small
+        !       and unstable for longer simulation times.
+        !
+        !       We thus multiply by a weight (M_V + M_g) such that when acceleration is calculated by
+        !       multiplying with the inverse mass matrix like:
+        !         potential_dot_dot = 1/M( .. default) - 1/M * potential_dot_dot_PML
+        !                           = 1/M(..) - 1/M * (M_V + M_g) (.. PML)
+        !                           = 1/M(..) - (M_V + M_g)/(M_V + M_C + M_g) (.. PML)
+        !
+        !       Thus, the PML surface nodes will have the PML damping not removed by adding a relatively large M_g term.
+        !       This helps stabilizing acoustic PML elements with free surface nodes.
+        !
+        !       For surface nodes off the free surface, M_g is zero and the expression becomes the same as for the
+        !       no-gravity case.
+        !
+        ! stability work-around
+        weight = weight + rmass_acoustic_free_surface_gravity(iglob)
+      endif
+
+      potential_dot_dot_acoustic_PML(i,j) = weight * &
                   (A1 * potential_dot_acoustic(iglob) + A2 * potential_acoustic(iglob) + &
                    A3 * rmemory_potential_acoustic(1,i,j,ispec_PML) + &
                    A4 * rmemory_potential_acoustic(2,i,j,ispec_PML))
-      endif
     enddo
   enddo
 

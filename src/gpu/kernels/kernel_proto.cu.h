@@ -506,7 +506,8 @@ Kernel_2_acoustic_PML_impl(const int nb_blocks_to_compute,
                            realw* betax_store,
                            realw* betaz_store,
                            const int gravity,
-                           const realw gravity_const);
+                           const realw gravity_const,
+                           realw* d_rmass_acoustic_free_surface_gravity);
 
 template<int FORWARD_OR_ADJOINT> __global__ void
 Kernel_2_viscoacoustic_impl(const int nb_blocks_to_compute,

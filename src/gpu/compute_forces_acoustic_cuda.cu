@@ -162,7 +162,8 @@ TRACE("Kernel_2_acoustic");
                                                                                mp->betax_store,
                                                                                mp->betaz_store,
                                                                                mp->gravity,
-                                                                               mp->gravity_const);
+                                                                               mp->gravity_const,
+                                                                               mp->d_rmass_acoustic_free_surface_gravity);
         } // PML
       }
       if (compute_wavefield_2){

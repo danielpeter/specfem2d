@@ -93,16 +93,18 @@
   real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLZ) :: tempx1,tempx2,tempx3
   real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLZ,N_SLS) :: tempx3_e1
   real(kind=CUSTOM_REAL), dimension(NGLJ,NGLLZ) :: r_xiplus1
+  real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLZ) :: sum_terms
 
   ! Jacobian matrix and determinant
   real(kind=CUSTOM_REAL), dimension(2,NGLLX,NGLLZ,N_SLS) :: deriv_e1
   real(kind=CUSTOM_REAL) :: xixl,xizl,gammaxl,gammazl,jacobianl
 
-  real(kind=CUSTOM_REAL) :: fac
+  real(kind=CUSTOM_REAL) :: fac,weight
   real(kind=CUSTOM_REAL) :: temp1l,temp2l,sum_forces,forces_attenuation
 
   ! for gravity
-  real(kind=CUSTOM_REAL) :: fac_z,gravity_term
+  real(kind=CUSTOM_REAL) :: fac_z
+  real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLZ) :: gravity_term
 
   ! local PML parameters
   real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLZ) :: potential_dot_dot_acoustic_PML
@@ -132,13 +134,18 @@
       do i = 1,NGLLX
         iglob = ibool(i,j,ispec)
         potential_elem(i,j) = potential_acoustic(iglob)
-
-        if (ATTENUATION_VISCOACOUSTIC .and. (.not. USE_A_STRONG_FORMULATION_FOR_E1) .and. time_stepping_scheme > 1) then
-          deriv_e1(1,i,j,:) = phi_nu1(i,j,ispec,:)
-          deriv_e1(2,i,j,:) = inv_tau_sigma_nu1(i,j,ispec,:)
-        endif
       enddo
     enddo
+
+    ! attenuation
+    if (ATTENUATION_VISCOACOUSTIC .and. (.not. USE_A_STRONG_FORMULATION_FOR_E1) .and. time_stepping_scheme > 1) then
+      do j = 1,NGLLZ
+        do i = 1,NGLLX
+          deriv_e1(1,i,j,:) = phi_nu1(i,j,ispec,:)
+          deriv_e1(2,i,j,:) = inv_tau_sigma_nu1(i,j,ispec,:)
+        enddo
+      enddo
+    endif
 
     ! first double loop over GLL points to compute and store gradients
     call mxm_2comp_singleA(dux_dxi,dux_dgamma,potential_elem,hprime_xx,hprime_zz)
@@ -202,12 +209,14 @@
             if (i == 1) then
               ! dchi/dr=rho * u_r=0 on the axis
               dux_dxl(i,j) = 0._CUSTOM_REAL
-              r_xiplus1(i,j) = gammazl * jacobianl
+              weight = gammazl * jacobianl
             else
-              r_xiplus1(i,j) = coord(1,ibool(i,j,ispec))/(xiglj(i) + ONE)
+              weight = coord(1,ibool(i,j,ispec))/(xiglj(i) + ONE)
             endif
-            tempx1(i,j) = r_xiplus1(i,j) * fac * (xixl * dux_dxl(i,j) + xizl * dux_dzl(i,j))
-            tempx2(i,j) = r_xiplus1(i,j) * fac * (gammaxl * dux_dxl(i,j) + gammazl * dux_dzl(i,j))
+            r_xiplus1(i,j) = weight
+
+            tempx1(i,j) = weight * fac * (xixl * dux_dxl(i,j) + xizl * dux_dzl(i,j))
+            tempx2(i,j) = weight * fac * (gammaxl * dux_dxl(i,j) + gammazl * dux_dzl(i,j))
           enddo
         enddo
       else
@@ -221,8 +230,10 @@
             fac = deriv_mapping(6,i,j,ispec) ! jacobian/rho
 
             iglob = ibool(i,j,ispec)
-            tempx1(i,j) = coord(1,iglob) * fac * (xixl * dux_dxl(i,j) + xizl * dux_dzl(i,j))
-            tempx2(i,j) = coord(1,iglob) * fac * (gammaxl * dux_dxl(i,j) + gammazl * dux_dzl(i,j))
+            weight = coord(1,iglob)
+
+            tempx1(i,j) = weight * fac * (xixl * dux_dxl(i,j) + xizl * dux_dzl(i,j))
+            tempx2(i,j) = weight * fac * (gammaxl * dux_dxl(i,j) + gammazl * dux_dzl(i,j))
           enddo
         enddo
       endif
@@ -278,6 +289,53 @@
     endif
 !! DK DK QUENTIN visco end
 
+    ! gravity
+    if (GRAVITY) then
+      ! uses potential definition: s = 1/rho grad(chi)
+      !
+      ! gravity term: 1/kappa grad(chi) * g
+      ! assumes that g only acts in (negative) z-direction
+      !
+      if (AXISYM) then
+        ! axisymmetric case
+        if (is_on_the_axis(ispec)) then
+          do j = 1,NGLLZ
+            do i = 1,NGLLX
+              ! adds gravity volume term: 1/kappa grad(chi) * g = - g/kappa \partial_z \chi
+              fac_z = - real(GRAVITY_CONST, kind=CUSTOM_REAL) / kappastore(i,j,ispec)
+              jacobianl = deriv_mapping(5,i,j,ispec)
+              weight = wxglj(i) * wzgll(j) * jacobianl * r_xiplus1(i,j)
+              ! gravity term
+              gravity_term(i,j) = weight * fac_z * dux_dzl(i,j)
+            enddo
+          enddo
+        else
+          do j = 1,NGLLZ
+            do i = 1,NGLLX
+              ! adds gravity volume term: 1/kappa grad(chi) * g = - g/kappa \partial_z \chi
+              fac_z = - real(GRAVITY_CONST, kind=CUSTOM_REAL) / kappastore(i,j,ispec)
+              jacobianl = deriv_mapping(5,i,j,ispec)
+              weight = wxgll(i) * wzgll(j) * jacobianl * coord(1,iglob)
+              ! gravity term
+              gravity_term(i,j) = weight * fac_z * dux_dzl(i,j)
+            enddo
+          enddo
+        endif
+      else
+        ! default case
+        do j = 1,NGLLZ
+          do i = 1,NGLLX
+            ! adds gravity volume term: 1/kappa grad(chi) * g = - g/kappa \partial_z \chi
+            fac_z = - real(GRAVITY_CONST, kind=CUSTOM_REAL) / kappastore(i,j,ispec)
+            jacobianl = deriv_mapping(5,i,j,ispec)
+            weight = wxgll(i) * wzgll(j) * jacobianl
+            ! gravity term
+            gravity_term(i,j) = weight * fac_z * dux_dzl(i,j)
+          enddo
+        enddo
+      endif
+    endif  ! GRAVITY
+
 !
 ! second double-loop over GLL to compute all the terms
 !
@@ -289,78 +347,19 @@
       if (is_on_the_axis(ispec)) then
         do j = 1,NGLLZ
           do i = 1,NGLLX
-            iglob = ibool(i,j,ispec)
-            if (.not. iglob_is_forced(iglob)) then
-              ! assembles the contributions
-              temp1l = 0._CUSTOM_REAL
-              temp2l = 0._CUSTOM_REAL
-              do k = 1,NGLJ
-                temp1l = temp1l + tempx1(k,j) * hprimeBarwglj_xx(k,i)
-                temp2l = temp2l + tempx2(i,k) * hprimewgll_zz(k,j)
-              enddo
-              ! sums contributions from each element to the global values
-              potential_dot_dot_acoustic(iglob) = potential_dot_dot_acoustic(iglob) &
-                                                  - (wzgll(j) * temp1l + wxglj(i) * temp2l)
-
-              ! gravity
-              if (GRAVITY) then
-                ! uses potential definition: s = 1/rho grad(chi)
-                ! for details, see: doc/how_to/README_acoustic_gravity_free_surface.md
-                !
-                ! gravity term: 1/kappa grad(chi) * g
-                ! assumes that g only acts in (negative) z-direction
-                !
-                ! adds gravity volume term: 1/kappa grad(chi) * g = - g/kappa \partial_z \chi
-                jacobianl = deriv_mapping(5,i,j,ispec)
-                fac_z = - real(GRAVITY_CONST, kind=CUSTOM_REAL) / kappastore(i,j,ispec)
-                gravity_term = jacobianl * wzgll(j) * wxglj(i) * r_xiplus1(i,j) * fac_z * dux_dzl(i,j)
-                potential_dot_dot_acoustic(iglob) = potential_dot_dot_acoustic(iglob) + gravity_term
-              endif
-
-              ! attenuation
-              if (ATTENUATION_VISCOACOUSTIC .and. (.not. USE_A_STRONG_FORMULATION_FOR_E1) .and. time_stepping_scheme > 1) &
-                dot_e1(iglob,:) = dot_e1(iglob,:) - (wzgll(j) * temp1l + wxglj(i) * temp2l)
-            endif
+            ! assembles the contributions
+            temp1l = 0._CUSTOM_REAL
+            temp2l = 0._CUSTOM_REAL
+            do k = 1,NGLJ
+              temp1l = temp1l + tempx1(k,j) * hprimeBarwglj_xx(k,i)
+              temp2l = temp2l + tempx2(i,k) * hprimewgll_zz(k,j)
+            enddo
+            sum_terms(i,j) = - (wzgll(j) * temp1l + wxglj(i) * temp2l)
           enddo
         enddo
       else
         do j = 1,NGLLZ
           do i = 1,NGLLX
-            iglob = ibool(i,j,ispec)
-            if (.not. iglob_is_forced(iglob)) then
-              ! assembles the contributions
-              temp1l = 0._CUSTOM_REAL
-              temp2l = 0._CUSTOM_REAL
-              do k = 1,NGLLX
-                temp1l = temp1l + tempx1(k,j) * hprimewgll_xx(k,i)
-                temp2l = temp2l + tempx2(i,k) * hprimewgll_zz(k,j)
-              enddo
-              ! sums contributions from each element to the global values
-              potential_dot_dot_acoustic(iglob) = potential_dot_dot_acoustic(iglob) &
-                                                  - (wzgll(j) * temp1l + wxgll(i) * temp2l)
-
-              ! gravity
-              if (GRAVITY) then
-                ! adds gravity volume term: 1/kappa grad(chi) * g = - g/kappa \partial_z \chi
-                jacobianl = deriv_mapping(5,i,j,ispec)
-                fac_z = - real(GRAVITY_CONST, kind=CUSTOM_REAL) / kappastore(i,j,ispec)
-                gravity_term = jacobianl * wzgll(j) * wxgll(i) * coord(1,iglob) * fac_z * dux_dzl(i,j)
-                potential_dot_dot_acoustic(iglob) = potential_dot_dot_acoustic(iglob) + gravity_term
-              endif
-
-              ! attenuation
-              if (ATTENUATION_VISCOACOUSTIC .and. (.not. USE_A_STRONG_FORMULATION_FOR_E1) .and. time_stepping_scheme > 1) &
-                dot_e1(iglob,:) = dot_e1(iglob,:) - (wzgll(j) * temp1l + wxgll(i) * temp2l)
-            endif
-          enddo
-        enddo
-      endif
-    else
-      ! default case
-      do j = 1,NGLLZ
-        do i = 1,NGLLX
-          iglob = ibool(i,j,ispec)
-          if (.not. iglob_is_forced(iglob)) then
             ! assembles the contributions
             temp1l = 0._CUSTOM_REAL
             temp2l = 0._CUSTOM_REAL
@@ -368,48 +367,43 @@
               temp1l = temp1l + tempx1(k,j) * hprimewgll_xx(k,i)
               temp2l = temp2l + tempx2(i,k) * hprimewgll_zz(k,j)
             enddo
-            ! sums contributions from each element to the global values
-            sum_forces = wzgll(j) * temp1l + wxgll(i) * temp2l
-            potential_dot_dot_acoustic(iglob) = potential_dot_dot_acoustic(iglob) - sum_forces
-
-            ! gravity
-            if (GRAVITY) then
-              ! uses potential definition: s = 1/rho grad(chi)
-              ! for details, see: doc/how_to/README_acoustic_gravity_free_surface.md
-              !
-              ! gravity term: 1/kappa grad(chi) * g
-              ! assumes that g only acts in (negative) z-direction
-              !
-              ! adds gravity volume term: 1/kappa grad(chi) * g = - g/kappa \partial_z \chi
-              jacobianl = deriv_mapping(5,i,j,ispec)
-              fac_z = - real(GRAVITY_CONST, kind=CUSTOM_REAL) / kappastore(i,j,ispec)
-              gravity_term = jacobianl * wxgll(i) * wzgll(j) * fac_z * dux_dzl(i,j)
-              potential_dot_dot_acoustic(iglob) = potential_dot_dot_acoustic(iglob) + gravity_term
-            endif
-
-            ! attenuation
-            if (ATTENUATION_VISCOACOUSTIC .and. (.not. USE_A_STRONG_FORMULATION_FOR_E1) .and. time_stepping_scheme > 1) &
-              dot_e1(iglob,:) = dot_e1(iglob,:) - sum_forces
-
-            if (ATTENUATION_VISCOACOUSTIC .and. USE_A_STRONG_FORMULATION_FOR_E1) then
-              call get_attenuation_forces_strong_form(sum_forces,sum_forces_old(i,j,ispec), &
-                                                      forces_attenuation,i,j,ispec,iglob,e1_acous_sf)
-              potential_dot_dot_acoustic(iglob) = potential_dot_dot_acoustic(iglob) - forces_attenuation
-            endif
-          endif
+            sum_terms(i,j) = - (wzgll(j) * temp1l + wxgll(i) * temp2l)
+          enddo
+        enddo
+      endif
+    else
+      ! default case
+      do j = 1,NGLLZ
+        do i = 1,NGLLX
+          ! assembles the contributions
+          temp1l = 0._CUSTOM_REAL
+          temp2l = 0._CUSTOM_REAL
+          do k = 1,NGLLX
+            temp1l = temp1l + tempx1(k,j) * hprimewgll_xx(k,i)
+            temp2l = temp2l + tempx2(i,k) * hprimewgll_zz(k,j)
+          enddo
+          sum_terms(i,j) = - (wzgll(j) * temp1l + wxgll(i) * temp2l)
         enddo
       enddo
     endif
 
-    ! PML contribution
-    if (PML_BOUNDARY_CONDITIONS) then
-      if (ispec_is_PML(ispec)) then
+    ! attenuation
+    if (ATTENUATION_VISCOACOUSTIC .and. (.not. USE_A_STRONG_FORMULATION_FOR_E1) .and. time_stepping_scheme > 1) then
+      iglob = ibool(i,j,ispec)
+      if (.not. iglob_is_forced(iglob)) then
+        dot_e1(iglob,:) = dot_e1(iglob,:) + sum_terms(i,j)
+      endif
+    endif
+
+    if (ATTENUATION_VISCOACOUSTIC .and. USE_A_STRONG_FORMULATION_FOR_E1) then
+      iglob = ibool(i,j,ispec)
+      if (.not. iglob_is_forced(iglob)) then
         do j = 1,NGLLZ
           do i = 1,NGLLX
-            iglob = ibool(i,j,ispec)
-            if (.not. iglob_is_forced(iglob)) then
-              potential_dot_dot_acoustic(iglob) = potential_dot_dot_acoustic(iglob) - potential_dot_dot_acoustic_PML(i,j)
-            endif
+            sum_forces = - sum_terms(i,j)  ! equal to term: + (wzgll(j) * temp1l + wxgll(i) * temp2l)
+            call get_attenuation_forces_strong_form(sum_forces,sum_forces_old(i,j,ispec), &
+                                                    forces_attenuation,i,j,ispec,iglob,e1_acous_sf)
+            sum_terms(i,j) = sum_terms(i,j) - forces_attenuation
           enddo
         enddo
       endif
@@ -423,11 +417,14 @@
           do j = 1,NGLLZ
             do i = 1,NGLLX
               ! sums contributions from each element to the global values
-              iglob = ibool(i,j,ispec)
-              if (.not. iglob_is_forced(iglob)) then
-                potential_dot_dot_acoustic(iglob) = potential_dot_dot_acoustic(iglob) + wzgll(j) * wxglj(i) * tempx3(i,j)
-                ! loop over all relaxation mechanisms
-                if (time_stepping_scheme > 1) dot_e1(iglob,:) = dot_e1(iglob,:) - wzgll(j) * wxglj(i) * tempx3_e1(i,j,:)
+              sum_terms(i,j) = sum_terms(i,j) + wzgll(j) * wxglj(i) * tempx3(i,j)
+
+              ! loop over all relaxation mechanisms
+              if (time_stepping_scheme > 1) then
+                iglob = ibool(i,j,ispec)
+                if (.not. iglob_is_forced(iglob)) then
+                  dot_e1(iglob,:) = dot_e1(iglob,:) - wzgll(j) * wxglj(i) * tempx3_e1(i,j,:)
+                endif
               endif
             enddo
           enddo
@@ -435,30 +432,63 @@
           do j = 1,NGLLZ
             do i = 1,NGLLX
               ! sums contributions from each element to the global values
-              iglob = ibool(i,j,ispec)
-              if (.not. iglob_is_forced(iglob)) then
-                potential_dot_dot_acoustic(iglob) = potential_dot_dot_acoustic(iglob) + wzgll(j) * wxgll(i) * tempx3(i,j)
-                ! loop over all relaxation mechanisms
-                if (time_stepping_scheme > 1) dot_e1(iglob,:) = dot_e1(iglob,:) - wzgll(j) * wxgll(i) * tempx3_e1(i,j,:)
+              sum_terms(i,j) = sum_terms(i,j) + wzgll(j) * wxgll(i) * tempx3(i,j)
+
+              ! loop over all relaxation mechanisms
+              if (time_stepping_scheme > 1) then
+                iglob = ibool(i,j,ispec)
+                if (.not. iglob_is_forced(iglob)) then
+                  dot_e1(iglob,:) = dot_e1(iglob,:) - wzgll(j) * wxgll(i) * tempx3_e1(i,j,:)
+                endif
               endif
             enddo
           enddo
         endif
       else
+        ! default case
         do j = 1,NGLLZ
           do i = 1,NGLLX
             ! sums contributions from each element to the global values
-            iglob = ibool(i,j,ispec)
-            if (.not. iglob_is_forced(iglob)) then
-              potential_dot_dot_acoustic(iglob) = potential_dot_dot_acoustic(iglob) + wzgll(j) * wxgll(i) * tempx3(i,j)
-              ! loop over all relaxation mechanisms
-              if (time_stepping_scheme > 1) dot_e1(iglob,:) = dot_e1(iglob,:) - wzgll(j) * wxgll(i) * tempx3_e1(i,j,:)
+            sum_terms(i,j) = sum_terms(i,j) + wzgll(j) * wxgll(i) * tempx3(i,j)
+
+            ! loop over all relaxation mechanisms
+            if (time_stepping_scheme > 1) then
+              iglob = ibool(i,j,ispec)
+              if (.not. iglob_is_forced(iglob)) then
+                dot_e1(iglob,:) = dot_e1(iglob,:) - wzgll(j) * wxgll(i) * tempx3_e1(i,j,:)
+              endif
             endif
           enddo
         enddo
       endif
     endif
 !! DK DK QUENTIN visco end
+
+    ! PML contribution
+    if (PML_BOUNDARY_CONDITIONS) then
+      if (ispec_is_PML(ispec)) then
+        do j = 1,NGLLZ
+          do i = 1,NGLLX
+            sum_terms(i,j) = sum_terms(i,j) - potential_dot_dot_acoustic_PML(i,j)
+          enddo
+        enddo
+      endif
+    endif
+
+    ! adds gravity contribution
+    if (GRAVITY) sum_terms(:,:) = sum_terms(:,:) + gravity_term(:,:)
+
+    ! adds final contributions
+    ! sums contributions from each element to the global values
+    do j = 1,NGLLZ
+      do i = 1,NGLLX
+        iglob = ibool(i,j,ispec)
+        if (.not. iglob_is_forced(iglob)) then
+          ! assembles the contributions
+          potential_dot_dot_acoustic(iglob) = potential_dot_dot_acoustic(iglob) + sum_terms(i,j)
+        endif
+      enddo
+    enddo
 
   enddo ! end of loop over all spectral elements
 

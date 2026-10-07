@@ -401,6 +401,9 @@ module specfem_par
   ! buffer for I/O
   real(kind=CUSTOM_REAL), dimension(:), allocatable :: no_backward_acoustic_buffer
 
+  ! for gravity free surface contribution
+  real(kind=CUSTOM_REAL), dimension(:), allocatable :: rmass_acoustic_free_surface_gravity
+
   !---------------------------------------------------------------------
   ! for elastic simulation
   !---------------------------------------------------------------------

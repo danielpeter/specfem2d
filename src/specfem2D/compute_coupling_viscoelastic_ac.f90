@@ -101,44 +101,6 @@
         !
         ! pressure
         pressure = - potential_dot_dot_acoustic(iglob)
-
-        ! gravity
-        if (GRAVITY) then
-          ! note: uses potential chi such that displacement s = 1/rho grad(chi),
-          !       pressure becomes: p = - kappa ( div( s ) ) = - dot_dot_chi + grad(chi) * g
-          !
-          !  g only acting in negative z-direction, i.e. g = - g z_hat and term: + grad(chi)* g = - g \partial_z \chi
-          !
-          ! compute dpotentialdzl
-          dux_dxi = 0._CUSTOM_REAL
-          dux_dgamma = 0._CUSTOM_REAL
-          if (AXISYM) then
-            ! AXISYM case
-            if (is_on_the_axis(ispec_acoustic)) then
-              do k = 1,NGLJ
-                dux_dxi = dux_dxi + potential_acoustic(ibool(k,j,ispec_acoustic)) * hprimeBar_xx(i,k)
-              enddo
-            else
-              do k = 1,NGLLX
-                dux_dxi = dux_dxi + potential_acoustic(ibool(k,j,ispec_acoustic)) * hprime_xx(i,k)
-              enddo
-            endif
-          else
-            ! default case
-            do k = 1,NGLLX
-              dux_dxi = dux_dxi + potential_acoustic(ibool(k,j,ispec_acoustic)) * hprime_xx(i,k)
-            enddo
-          endif
-          do k = 1,NGLLZ
-            dux_dgamma = dux_dgamma + potential_acoustic(ibool(i,k,ispec_acoustic)) * hprime_zz(j,k)
-          enddo
-          ! term \partial_z \chi
-          dpotentialdzl = dux_dxi * xiz(i,j,ispec_acoustic) + dux_dgamma * gammaz(i,j,ispec_acoustic)
-
-          ! perturbed fluid pressure under gravity: p* = - \kappa \nabla \cdot \mathbf{s} = - \partial_t^2 chi + \nabla chi \cdot g
-          ! with g only acting in negative z-direction g = (0, -g): \nabla chi \cdot g = - g \partial_z \chi
-          pressure = pressure - real(GRAVITY_CONST, kind=CUSTOM_REAL) * dpotentialdzl
-        endif
       else
         ! kernel simulations
         ! new definition of adjoint displacement and adjoint potential
@@ -188,9 +150,49 @@
             call stop_the_code('Error time scheme for PML not implement yet in compute_coupling_viscoelastic_ac()')
           end select
 
-          pressure = - (A0 * potential_dot_dot_acoustic(iglob) + A1 * potential_dot_acoustic(iglob) + &
-                        A2 * potential_acoustic(iglob) + A3 * rmemory_sfb_potential_ddot_acoustic(1,i,j,inum))
+          pressure = - (A0 * potential_dot_dot_acoustic(iglob) + &
+                        A1 * potential_dot_acoustic(iglob) + &
+                        A2 * potential_acoustic(iglob) + &
+                        A3 * rmemory_sfb_potential_ddot_acoustic(1,i,j,inum))
         endif
+      endif
+
+      ! adds gravity contribution
+      if (GRAVITY .and. SIMULATION_TYPE /= 3) then
+        ! note: uses potential chi such that displacement s = 1/rho grad(chi),
+        !       pressure becomes: p = - kappa ( div( s ) ) = - dot_dot_chi + grad(chi) * g
+        !
+        !  g only acting in negative z-direction, i.e. g = - g z_hat and term: + grad(chi)* g = - g \partial_z \chi
+        !
+        ! compute dpotentialdzl
+        dux_dxi = 0._CUSTOM_REAL
+        dux_dgamma = 0._CUSTOM_REAL
+        if (AXISYM) then
+          ! AXISYM case
+          if (is_on_the_axis(ispec_acoustic)) then
+            do k = 1,NGLJ
+              dux_dxi = dux_dxi + potential_acoustic(ibool(k,j,ispec_acoustic)) * hprimeBar_xx(i,k)
+            enddo
+          else
+            do k = 1,NGLLX
+              dux_dxi = dux_dxi + potential_acoustic(ibool(k,j,ispec_acoustic)) * hprime_xx(i,k)
+            enddo
+          endif
+        else
+          ! default case
+          do k = 1,NGLLX
+            dux_dxi = dux_dxi + potential_acoustic(ibool(k,j,ispec_acoustic)) * hprime_xx(i,k)
+          enddo
+        endif
+        do k = 1,NGLLZ
+          dux_dgamma = dux_dgamma + potential_acoustic(ibool(i,k,ispec_acoustic)) * hprime_zz(j,k)
+        enddo
+        ! term \partial_z \chi
+        dpotentialdzl = dux_dxi * xiz(i,j,ispec_acoustic) + dux_dgamma * gammaz(i,j,ispec_acoustic)
+
+        ! perturbed fluid pressure under gravity: p* = - \kappa \nabla \cdot \mathbf{s} = - \partial_t^2 chi + \nabla chi \cdot g
+        ! with g only acting in negative z-direction g = (0, -g): \nabla chi \cdot g = - g \partial_z \chi
+        pressure = pressure - real(GRAVITY_CONST, kind=CUSTOM_REAL) * dpotentialdzl
       endif
 
       ! get point values for the elastic side
@@ -289,8 +291,8 @@
 !! DK DK QUENTIN cot'e solide, donc on ajoute bien aussi a la composante tangentielle, mais je ne
 !! DK DK QUENTIN sais pas si le fait de ne mettre que "pressure" dans le truc a ajouter est suffisant
 !! DK DK QUENTIN dans le cas viscoacoustique comme il l'est dans le cas acoustique non dissipatif)
-      accel_elastic(1,iglob) = accel_elastic(1,iglob) + weight*nx*pressure
-      accel_elastic(2,iglob) = accel_elastic(2,iglob) + weight*nz*pressure
+      accel_elastic(1,iglob) = accel_elastic(1,iglob) + weight * nx * pressure
+      accel_elastic(2,iglob) = accel_elastic(2,iglob) + weight * nz * pressure
 
     enddo
   enddo
@@ -345,6 +347,10 @@
       iglob = ibool(i,j,ispec_acoustic)
 
       ! pressure
+      ! p = - kappa ( div( s ) ) = - dot_dot_chi
+      b_pressure = - b_potential_dot_dot_acoustic(iglob)
+
+      ! adds gravity contribution
       if (GRAVITY) then
         ! note: uses potential chi such that displacement s = 1/rho grad(chi),
         !       pressure becomes: p = - kappa ( div( s ) ) = - dot_dot_chi + grad(chi) * g
@@ -379,10 +385,7 @@
 
         ! perturbed fluid pressure under gravity: p* = - \kappa \nabla \cdot \mathbf{s} = - \partial_t^2 chi + \nabla chi \cdot g
         ! with g only acting in negative z-direction g = (0, -g): \nabla chi \cdot g = - g \partial_z \chi
-        b_pressure = - b_potential_dot_dot_acoustic(iglob) - real(GRAVITY_CONST, kind=CUSTOM_REAL) * dpotentialdzl
-      else
-        ! no-gravity case
-        b_pressure = - b_potential_dot_dot_acoustic(iglob)
+        b_pressure = b_pressure - real(GRAVITY_CONST, kind=CUSTOM_REAL) * dpotentialdzl
       endif
 
       ! get point values for the elastic side

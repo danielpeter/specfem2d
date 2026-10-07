@@ -238,7 +238,8 @@
                             PML_nglob_abs_acoustic,PML_abs_points_acoustic, &
                             PML_nglob_abs_elastic,PML_abs_points_elastic, &
                             any_acoustic,rhostore, &
-                            num_fluid_solid_edges)
+                            num_fluid_solid_edges, &
+                            rmass_acoustic_free_surface_gravity)
   endif
 
 ! abs_boundary_ispec                     : Array containing spectral element indices in absorbing areas

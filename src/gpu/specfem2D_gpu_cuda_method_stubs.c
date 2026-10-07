@@ -440,7 +440,8 @@ void FC_FUNC_(prepare_pml_device,
                                   int* h_PML_abs_points_elastic,
                                   int* ACOUSTIC_SIMULATION,
                                   realw* rhostore,
-                                  int* h_num_fluid_solid_edges){}
+                                  int* h_num_fluid_solid_edges,
+                                  realw* rmass_acoustic_free_surface_gravity){}
 
 void FC_FUNC_(prepare_stacey_device,
               PREPARE_STACEY_DEVICE)(long* Mesh_pointer,

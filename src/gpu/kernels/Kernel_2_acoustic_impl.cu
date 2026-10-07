@@ -394,7 +394,8 @@ Kernel_2_acoustic_PML_impl(const int nb_blocks_to_compute,
                            realw* betax_store,
                            realw* betaz_store,
                            const int gravity,
-                           const realw gravity_const){
+                           const realw gravity_const,
+                           realw* d_rmass_acoustic_free_surface_gravity){
 
   // block-id == number of local element id in phase_ispec array
   int bx = blockIdx.y*gridDim.x+blockIdx.x;
@@ -428,7 +429,7 @@ Kernel_2_acoustic_PML_impl(const int nb_blocks_to_compute,
   realw c1,c2;
   realw r1,r2,r3,r4,r5,r6;
   realw rhol,kappal;
-  realw fac,A1,A2,A3,A4;
+  realw fac,weight,A1,A2,A3,A4;
   realw coef0_1,coef1_1,coef2_1;
   realw coef0_2,coef1_2,coef2_2;
   realw coef0_3,coef1_3,coef2_3;
@@ -757,8 +758,17 @@ Kernel_2_acoustic_PML_impl(const int nb_blocks_to_compute,
     A4 = 0.5f * alphax * alphax * (fac1 - alphax);
     //pml_contrib = sh_wxgll[J] * sh_wxgll[I] * fac * (A1 * potential_dot[iglob] + A2 * s_dummy_loc[tx] + A3 * r5 + A4 * r6);
   }
+
   fac = jacobianl / kappal;    // jacobianl / kappal
-  pml_contrib = sh_wxgll[J] * sh_wxgll[I] * fac * (A1 * potential_dot[iglob] + A2 * s_dummy_loc[tx] + A3 * r5 + A4 * r6);
+  weight = sh_wxgll[J] * sh_wxgll[I] * fac;
+
+  // for gravity
+  if (gravity){
+    // adds M_g term for stabilization (since mass matrix has been modified for free surface nodes)
+    weight += d_rmass_acoustic_free_surface_gravity[iglob];
+  }
+
+  pml_contrib = weight * (A1 * potential_dot[iglob] + A2 * s_dummy_loc[tx] + A3 * r5 + A4 * r6);
 
   // Update derivatives
   // see routine pml_compute_memory_variables_acoustic() in file pml_compute_memory_variables.f90 (line ~218):

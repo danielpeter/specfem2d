@@ -1223,7 +1223,6 @@ Kernel_2_noatt_iso_PML_impl(const int nb_blocks_to_compute,
   }
 
   // adds gravity contribution to stress (non-symmetric G-tensor term)
-  // (see compute_forces_viscoelastic.F90 and doc/how_to/README_elastic_gravity.md)
   // assumes a constant gravity acting only in (negative) z-direction: g = (0,-g)
   if (gravity && p_sv) {
     realw rhol_g = d_rhostore[offset] * gravity_const;
@@ -1457,7 +1456,6 @@ Kernel_2_noatt_ani_impl(int nb_blocks_to_compute,
   }
 
   // adds gravity contribution to stress (non-symmetric G-tensor term)
-  // (see compute_forces_viscoelastic.F90 and doc/how_to/README_elastic_gravity.md)
   // assumes a constant gravity acting only in (negative) z-direction: g = (0,-g)
   if (gravity && p_sv) {
     realw rhol_g = d_rhostore[offset] * gravity_const;
@@ -1993,7 +1991,6 @@ Kernel_2_att_ani_impl(int nb_blocks_to_compute,
   }
 
   // adds gravity contribution to stress (non-symmetric G-tensor term)
-  // (see compute_forces_viscoelastic.F90 and doc/how_to/README_elastic_gravity.md)
   // assumes a constant gravity acting only in (negative) z-direction: g = (0,-g)
   if (gravity && p_sv) {
     realw rhol_g = d_rhostore[offset] * gravity_const;
