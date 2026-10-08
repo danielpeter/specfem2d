@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Check for changes
       id: diff
@@ -86,7 +86,7 @@ jobs:
     needs: changesCheck
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install dependencies
       run: |
@@ -147,7 +147,7 @@ jobs:
     needs: changesCheck
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Cache Intel oneapi packages
       id: cache-intel-oneapi
@@ -282,7 +282,7 @@ jobs:
     needs: changesCheck
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Cache Intel oneapi packages
       id: cache-intel-oneapi-ifx
@@ -419,7 +419,7 @@ jobs:
         os: [ubuntu-latest,ubuntu-22.04]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install packages
       run: ./.github/scripts/run_install.sh
@@ -438,7 +438,7 @@ jobs:
     needs: changesCheck
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install packages
       env:
@@ -468,7 +468,7 @@ jobs:
     needs: [compilationChecks]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install packages
       run: ./.github/scripts/run_install.sh
@@ -487,7 +487,7 @@ jobs:
     needs: [compilationChecks]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install packages
       run: ./.github/scripts/run_install.sh
@@ -511,7 +511,7 @@ jobs:
     needs: [compilationChecks]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install packages
       run: ./.github/scripts/run_install.sh
@@ -536,7 +536,7 @@ jobs:
     needs: [compilationChecks]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install packages
       run: ./.github/scripts/run_install.sh
@@ -561,7 +561,7 @@ jobs:
     needs: [compilationChecks]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install packages
       run: ./.github/scripts/run_install.sh
@@ -585,7 +585,7 @@ jobs:
     needs: [compilationChecks]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install packages
       run: ./.github/scripts/run_install.sh
@@ -609,7 +609,7 @@ jobs:
     needs: [compilationChecks]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install packages
       run: ./.github/scripts/run_install.sh
@@ -634,7 +634,7 @@ jobs:
     needs: [compilationChecks]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install packages
       run: ./.github/scripts/run_install.sh
@@ -658,7 +658,7 @@ jobs:
     needs: [compilationChecks]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install packages
       run: ./.github/scripts/run_install.sh
@@ -682,7 +682,7 @@ jobs:
     needs: [compilationChecks]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install packages
       run: ./.github/scripts/run_install.sh
@@ -706,7 +706,7 @@ jobs:
     needs: [compilationChecks]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install packages
       run: ./.github/scripts/run_install.sh
@@ -731,7 +731,7 @@ jobs:
     needs: [compilationChecks]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install packages
       run: ./.github/scripts/run_install.sh
@@ -755,7 +755,7 @@ jobs:
     needs: [compilationChecks]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install packages
       run: ./.github/scripts/run_install.sh
@@ -779,7 +779,7 @@ jobs:
     needs: [compilationChecks]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install packages
       run: ./.github/scripts/run_install.sh
@@ -803,7 +803,7 @@ jobs:
     needs: [compilationChecks]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install packages
       run: ./.github/scripts/run_install.sh
@@ -828,7 +828,7 @@ jobs:
     needs: [compilationChecks]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install packages
       run: ./.github/scripts/run_install.sh
@@ -852,7 +852,7 @@ jobs:
     needs: [compilationChecks]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install packages
       run: ./.github/scripts/run_install.sh
@@ -876,7 +876,7 @@ jobs:
     needs: [compilationChecks]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install packages
       run: ./.github/scripts/run_install.sh
@@ -900,7 +900,7 @@ jobs:
     needs: [compilationChecks]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install packages
       run: ./.github/scripts/run_install.sh
@@ -924,7 +924,7 @@ jobs:
     needs: [compilationChecks]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install packages
       run: ./.github/scripts/run_install.sh
@@ -948,7 +948,7 @@ jobs:
     needs: [compilationChecks]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install packages
       run: ./.github/scripts/run_install.sh
@@ -972,7 +972,7 @@ jobs:
     needs: [compilationChecks]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install packages
       run: ./.github/scripts/run_install.sh
@@ -996,7 +996,7 @@ jobs:
     needs: [compilationChecks]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install packages
       run: ./.github/scripts/run_install.sh
@@ -1020,7 +1020,7 @@ jobs:
     needs: [compilationChecks]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install packages
       run: ./.github/scripts/run_install.sh
@@ -1044,7 +1044,7 @@ jobs:
     needs: [compilationChecks]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install packages
       run: ./.github/scripts/run_install.sh
@@ -1068,7 +1068,7 @@ jobs:
     needs: [compilationChecks]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install packages
       run: ./.github/scripts/run_install.sh
@@ -1092,7 +1092,7 @@ jobs:
     needs: [compilationChecks]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install packages
       run: ./.github/scripts/run_install.sh
@@ -1148,7 +1148,7 @@ jobs:
           testngll: 6
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Install packages
       run: ./.github/scripts/run_install.sh
