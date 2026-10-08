@@ -1110,6 +1110,30 @@ jobs:
       run: ./.github/scripts/run_tests.sh
       shell: bash
 
+  linuxTest_27:
+    name: Test 27 - waterlayered halfspace tsunami
+    runs-on: ubuntu-latest
+    needs: [compilationChecks]
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Install packages
+      run: ./.github/scripts/run_install.sh
+      shell: bash
+
+    - name: Run build
+      env:
+        TESTFLAGS: --with-mpi --enable-vectorization
+      run: ./.github/scripts/run_build.sh
+      shell: bash
+
+    - name: Run test
+      env:
+        TESTDIR: EXAMPLES/applications/waterlayered_halfspace_tsunami
+      run: ./.github/scripts/run_tests.sh
+      shell: bash
+
 
   # intermediate workflow check
   exampleChecks:
@@ -1118,7 +1142,7 @@ jobs:
             linuxTest_11,linuxTest_12,linuxTest_13,linuxTest_14,linuxTest_15,
             linuxTest_16,linuxTest_17,linuxTest_18,linuxTest_19,linuxTest_20,
             linuxTest_21,linuxTest_22,linuxTest_23,linuxTest_24,linuxTest_25,
-            linuxTest_26]
+            linuxTest_26,linuxTest_27]
     runs-on: ubuntu-latest
     steps:
     - run: echo "example tests passed"
