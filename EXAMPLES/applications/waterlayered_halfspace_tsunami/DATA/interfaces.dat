@@ -1,0 +1,39 @@
+#
+# number of interfaces
+#
+3
+
+#
+# for each interface below, we give the number of points and then x,y for each point
+#
+
+# interface number 1 (bottom of the mesh)
+# number of points
+2
+# x        # z
+-100000.0  -24000.0
+ 100000.0  -24000.0
+
+# interface number 2 (ocean floor)
+# number of points
+2
+# x        # z
+-100000.0  -4000.0
+ 100000.0  -4000.0
+
+
+# interface number 2 (top)
+# number of points
+2
+# x        # z
+-100000.0  0.0
+ 100000.0  0.0
+
+#
+# for each layer, we give the number of spectral elements in the vertical direction
+#
+
+# layer number 1 (bottom to ocean-floor layer)
+20
+# layer number 2 (ocean-floor to top layer
+4

@@ -1,0 +1,212 @@
+
+ **********************************************
+ *** Specfem 2-D Mesher - MPI version       ***
+ **********************************************
+
+ Running Git version of the code corresponding to unknown
+ dating unknown
+
+ Reading the parameter file...
+
+ Title of the simulation: waterlayered-halfspace tsunami
+
+ Receiver lines:
+   Nb of line sets =            2
+
+ Parameter file successfully read
+
+
+ Mesh from internal meshing:
+   Materials:
+   Nb of solid, fluid or porous materials =            2
+
+ --------
+ Material #           1  isotropic
+ rho,cp,cs   =    3000.0000000000000        5000.0000000000000        3000.0000000000000
+ Qkappa, Qmu =    9999.0000000000000        9999.0000000000000
+ Material is solid
+ --------
+ Material #           2  isotropic
+ rho,cp,cs   =    1000.0000000000000        1500.0000000000000        0.0000000000000000
+ Qkappa, Qmu =    9999.0000000000000        9999.0000000000000
+ Material is fluid
+ --------
+
+ Reading interface data from file: ./DATA/interfaces.dat
+ Reading            2  points for interface            1
+ Reading            2  points for interface            2
+ Reading            2  points for interface            3
+
+ Total number of layers in z direction =            2
+ There are           20  spectral elements along Z in layer            1
+ There are            4  spectral elements along Z in layer            2
+
+ Total number of spectral elements along X =          200
+ Total number of spectral elements along Z =           24
+
+ Regions:
+   Nb of regions in the mesh =            2
+
+ ------
+ Region            1
+ IX from            1  to          200
+ IZ from            1  to           20
+ Material #            1  isotropic
+ Material is solid
+ vp     =    5000.00000
+ vs     =    3000.00000
+ rho    =    3000.00000
+ Poisson's ratio =   0.218750000
+ QKappa =    9999.00000
+ Qmu    =    9999.00000
+ ------
+ Region            2
+ IX from            1  to          200
+ IZ from           21  to           24
+ Material #            2  isotropic
+ Material is fluid
+ vp     =    1500.00000
+ vs     =    0.00000000
+ rho    =    1000.00000
+ Poisson's ratio =   0.500000000
+ QKappa =    9999.00000
+ Qmu    =    9999.00000
+ ------
+
+ creating mesh from internal meshing:
+   Total number of spectral elements         =         4800
+
+ PML mesh elements:
+   using internal mesh, PML elements will be determined in solver run...
+
+ The mesh contains         4800  elements
+
+ Control elements have            4  nodes
+
+ Reading in SOURCE file...
+
+ Source           1
+   Position xs, zs =    0.0000000000000000       -14000.000000000000
+
+   Source type:            2
+   (1=force, 2=moment tensor)
+
+   Moment tensor source:
+   Mxx of the source =   -1.0000000000000000
+   Mzz of the source =    1.0000000000000000
+   Mxz of the source =    0.0000000000000000
+
+   Time function type:          17
+   ( 0=Normalized Gaussian |  1=Ricker       |  2=First derivative   |  3=Gaussian       |  4=Dirac |
+     5=Heaviside           |  6=Ocean type I |  7=Ocean type II      |  8=Read from file |  9=Burst |
+    10=Sinusoidal          | 11=Ormsby       | 12=Brune              | 13=Smoothed Brune | 14=Yoffe |
+    15=Integrated Yoffe    | 16=Kuepper      | 17=Integrated Kuepper | )
+
+   Integrated Kuepper wavelet:
+     frequency        =   0.50000000000000000       (rise time =    2.00000000      s)
+     delay            =    0.0000000000000000
+
+   Multiplying factor =   1.0000E+14
+
+ all sources are okay
+
+ Normals to surface not needed
+
+ Node coordinates:
+
+ reading node coordinates from interfaces...
+
+ Mesh surfaces:
+   determining acoustic free surface...
+   number of acoustic elements with free surface =          200
+
+   determining absorbing boundary surfaces...
+   number of elements with absorbing boundaries =          248
+
+
+ Mesh dimensions:
+   Min and max value of X in the grid =   -100000.00000000000        100000.00000000000
+   Min and max value of Z in the grid =   -24000.000000000004        0.0000000000000000
+
+ checking mesh elements for invalid Jacobians...
+   number of elements:         4800
+   NGNOD             :            4
+   AXISYM            :  F
+   all elements have valid Jacobians
+
+ Mesh partitioning:
+   decomposing mesh using NPROC =            4
+
+ Graph construction:
+   graph adjacency done
+
+ ************ Computing elements load ************
+ Number of elastic elements :        3298
+ Number of acoustic elements :         776
+ Number of viscoelastic elements :           0
+ Number of viscoacoustic elements :           0
+ Number of elastic PML elements :         702
+ Number of acoustic PML elements :          24
+ Number of viscoelastic PML elements :           0
+ Number of viscoacoustic PML elements :           0
+ *************************************************
+
+
+ Partitioning type: SCOTCH
+
+ Coupled interfaces:
+   nedges_coupled (acoustic/elastic)     =          200
+   after iteration            1 repartitioning of all coupled elements done
+   nedges_coupled (acoustic/poroelastic) =            0
+   nedges_coupled (poroelastic/elastic)  =            0
+
+ Local numbering:
+   NPROC:            4
+   number of elements:         4800
+
+ decompose mesh all done
+
+ Absorbing boundaries:
+   nedge_bound   :          248
+   nelemabs_merge:          248
+
+ Saving databases:
+   database file: ./OUTPUT_FILES/Database00000.bin
+   slice            0  has number of spectral elements =        1320
+
+   database file: ./OUTPUT_FILES/Database00001.bin
+   slice            1  has number of spectral elements =        1080
+
+   database file: ./OUTPUT_FILES/Database00002.bin
+   slice            2  has number of spectral elements =        1320
+
+   database file: ./OUTPUT_FILES/Database00003.bin
+   slice            3  has number of spectral elements =        1080
+
+   VTK mesh files:
+   written file: ./OUTPUT_FILES//mesh_materials.vtk
+   written file: ./OUTPUT_FILES//mesh_partition_number.vtk
+   done
+
+ creating STATIONS file...
+
+ writing the ./DATA/STATIONS file
+
+
+ There are           10  receivers
+
+ Target positions (x,z) of the           10  receivers
+
+ Receiver            1  =   -50000.000000000000       -4000.0000000000000
+ Receiver            2  =   -25000.000000000000       -4000.0000000000000
+ Receiver            3  =    0.0000000000000000       -4000.0000000000000
+ Receiver            4  =    25000.000000000000       -4000.0000000000000
+ Receiver            5  =    50000.000000000000       -4000.0000000000000
+ Receiver            6  =   -50000.000000000000        0.0000000000000000
+ Receiver            7  =   -25000.000000000000        0.0000000000000000
+ Receiver            8  =    0.0000000000000000        0.0000000000000000
+ Receiver            9  =    25000.000000000000        0.0000000000000000
+ Receiver           10  =    50000.000000000000        0.0000000000000000
+
+ This will be a parallel simulation on            4  processor cores
+
